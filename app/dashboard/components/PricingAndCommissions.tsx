@@ -539,6 +539,20 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 {showPricing && LINE_COUNTS.map(n => (
                   <th rowSpan={rs} key={n} className="border border-gray-300 px-1 py-1 font-semibold text-blue-700 text-center whitespace-nowrap w-11 bg-blue-50">L{n}</th>
                 ))}
+                {showPricing && (
+                  <th
+                    rowSpan={rs}
+                    className="border border-gray-300 px-1 py-1 font-semibold text-blue-700 text-center whitespace-nowrap w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
+                    onClick={() => setDetailsExpanded(x => !x)}
+                  >
+                    Details {detailsExpanded ? '▼' : '▶'}
+                  </th>
+                )}
+                {showPricing && detailsExpanded && PLAN_DETAIL_SECTIONS.map(s => (
+                  <th key={s.label} colSpan={s.fields.length} className="border border-gray-300 px-1 py-0.5 text-[10px] font-semibold text-blue-600 uppercase tracking-wide text-center bg-blue-50/50 whitespace-nowrap">
+                    {s.label}
+                  </th>
+                ))}
                 {showPricing && showCommissions && <th rowSpan={rs} className="bg-gray-300 w-0.5 p-0 border-0" />}
                 {showCommissions && commissionConfig.roles.map(role => (
                   <th
@@ -549,23 +563,11 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                     }`}
                   >{role}</th>
                 ))}
-                <th
-                  rowSpan={rs}
-                  className="border border-gray-300 px-1 py-1 font-semibold text-gray-500 text-center whitespace-nowrap w-14 cursor-pointer hover:bg-gray-200 select-none"
-                  onClick={() => setDetailsExpanded(x => !x)}
-                >
-                  Details {detailsExpanded ? '▼' : '▶'}
-                </th>
-                {detailsExpanded && PLAN_DETAIL_SECTIONS.map(s => (
-                  <th key={s.label} colSpan={s.fields.length} className="border border-gray-300 px-1 py-0.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wide text-center bg-blue-50/50 whitespace-nowrap">
-                    {s.label}
-                  </th>
-                ))}
               </tr>
-              {detailsExpanded && (
+              {showPricing && detailsExpanded && (
                 <tr className="bg-blue-50/30">
                   {PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
-                    <th key={f.key} className="border border-gray-300 px-1 py-0.5 text-[9px] font-medium text-gray-500 text-center whitespace-nowrap max-w-[72px]">
+                    <th key={f.key} className="border border-gray-300 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center whitespace-nowrap max-w-[72px]">
                       {f.label}
                     </th>
                   ))}
@@ -595,6 +597,21 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                         )}
                       </td>
                     ))}
+                    {showPricing && <td className="border border-gray-300 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20">—</td>}
+                    {showPricing && detailsExpanded && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
+                      <td key={f.key} className="border border-gray-300 p-0 text-center bg-blue-50/30">
+                        {isAdmin ? (
+                          <input
+                            className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent min-w-[60px]"
+                            value={planDetails[plan]?.[f.key] ?? ''}
+                            placeholder="—"
+                            onChange={e => setPlanDetail(plan, f.key, e.target.value)}
+                          />
+                        ) : (
+                          <span className="block px-1 py-0.5 text-blue-800 min-w-[60px]">{planDetails[plan]?.[f.key] || '—'}</span>
+                        )}
+                      </td>
+                    ))}
                     {showPricing && showCommissions && <td className="bg-gray-200 w-0.5 p-0 border-0" />}
                     {showCommissions && commissionConfig.roles.map(role => (
                       <td
@@ -614,21 +631,6 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                           <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>
                             {commRow?.commissions[role] || '—'}
                           </span>
-                        )}
-                      </td>
-                    ))}
-                    <td className="border border-gray-300 px-1 py-0.5 text-center text-xs text-gray-300">—</td>
-                    {detailsExpanded && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
-                      <td key={f.key} className="border border-gray-300 p-0 text-center">
-                        {isAdmin ? (
-                          <input
-                            className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-50 bg-transparent min-w-[60px]"
-                            value={planDetails[plan]?.[f.key] ?? ''}
-                            placeholder="—"
-                            onChange={e => setPlanDetail(plan, f.key, e.target.value)}
-                          />
-                        ) : (
-                          <span className="block px-1 py-0.5 text-gray-700 min-w-[60px]">{planDetails[plan]?.[f.key] || '—'}</span>
                         )}
                       </td>
                     ))}
