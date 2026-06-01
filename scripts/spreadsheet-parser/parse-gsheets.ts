@@ -161,11 +161,47 @@ export async function parseGoogleSheet(url: string): Promise<SheetSchema> {
     return condition ? [{ range, condition, style }] : []
   })
 
+  // --- Row heights ---
+  const rowMeta: any[] = (gridData as any).rowMetadata ?? []
+  const rowHeights: number[] = rowMeta.map((r: any) => r?.pixelSize ?? 20)
+
+  // --- Data validation (extracted from cell-level dataValidation) ---
+  const dvMap: Map<string, import('./types.ts').ValidationRule> = new Map()
+  rowData.slice(1).forEach((rowEntry: unknown, ri: number) => {
+    ((rowEntry as { values?: unknown[] })?.values ?? []).forEach((cell: unknown, ci: number) => {
+      const dv = (cell as { dataValidation?: any })?.dataValidation
+      if (!dv) return
+      const col = columns[ci]
+      if (!col || dvMap.has(col.name)) return  // only record first occurrence per column
+      const cond = dv.condition ?? {}
+      const rule: import('./types.ts').ValidationRule = {
+        column: col.name,
+        type: 'custom',
+        required: dv.showCustomUi ?? false,
+      }
+      if (cond.type === 'ONE_OF_LIST' || cond.type === 'ONE_OF_RANGE') {
+        rule.type = 'list'
+        rule.values = (cond.values ?? []).map((v: any) => v.userEnteredValue ?? '')
+      } else if (cond.type === 'NUMBER_BETWEEN' || cond.type === 'NUMBER_GREATER' || cond.type === 'NUMBER_LESS') {
+        rule.type = 'decimal'
+        if (cond.values?.[0]) rule.min = Number(cond.values[0].userEnteredValue)
+        if (cond.values?.[1]) rule.max = Number(cond.values[1].userEnteredValue)
+      }
+      dvMap.set(col.name, rule)
+    })
+  })
+  const dataValidation = Array.from(dvMap.values())
+
+  // Google Sheets row/col groups (outline groups) are not exposed in the basic
+  // spreadsheets.get response. They require a separate API call. Left empty for v1.
+  const gsGroups: import('./types.ts').GroupDef[] = []
+
   return {
     tableName: sanitizeName(sheetName),
     columns, rows, styles,
     conditionalFormatting,
-    dataValidation: [],
-    groups: [], frozenRows, frozenCols, mergedCells,
+    dataValidation,
+    groups: gsGroups, frozenRows, frozenCols, mergedCells,
+    rowHeights,
   }
 }

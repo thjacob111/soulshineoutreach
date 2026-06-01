@@ -74,4 +74,5 @@ export interface SheetSchema {
   frozenRows: number
   frozenCols: number
   mergedCells: MergeRange[]
+  rowHeights: number[]       // pixel height per data row (index 0 = first data row after header), default 20
 }

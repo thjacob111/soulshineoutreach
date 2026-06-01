@@ -155,22 +155,27 @@ export function buildSchema(ws: XLSX.WorkSheet, sheetName: string): SheetSchema 
     endCol: m.e.c,
   }))
 
+  // --- Row heights ---
+  const rowHeights: number[] = ((ws['!rows'] as any[]) ?? []).map((r: any) =>
+    r?.hpt ? Math.round(r.hpt * 1.33) : 20  // hpt = height in points, convert to px
+  )
+
   // --- Row/column groups ---
   const groups: GroupDef[] = []
-  const rowMeta = (ws['!rows'] as { level?: number }[]) ?? []
-  const colGroupMeta = (ws['!cols'] as { level?: number }[]) ?? []
+  const rowMeta = (ws['!rows'] as { level?: number; collapsed?: boolean }[]) ?? []
+  const colGroupMeta = (ws['!cols'] as { level?: number; collapsed?: boolean }[]) ?? []
 
   let groupStart = -1
   rowMeta.forEach((row, i) => {
     if (row?.level && row.level > 0) {
       if (groupStart === -1) groupStart = i
     } else if (groupStart !== -1) {
-      groups.push({ type: 'row', start: groupStart, end: i - 1, collapsed: false })
+      groups.push({ type: 'row', start: groupStart, end: i - 1, collapsed: rowMeta[groupStart]?.collapsed ?? false })
       groupStart = -1
     }
   })
   if (groupStart !== -1) {
-    groups.push({ type: 'row', start: groupStart, end: rowMeta.length - 1, collapsed: false })
+    groups.push({ type: 'row', start: groupStart, end: rowMeta.length - 1, collapsed: rowMeta[groupStart]?.collapsed ?? false })
   }
 
   let colGroupStart = -1
@@ -178,12 +183,12 @@ export function buildSchema(ws: XLSX.WorkSheet, sheetName: string): SheetSchema 
     if (col?.level && col.level > 0) {
       if (colGroupStart === -1) colGroupStart = i
     } else if (colGroupStart !== -1) {
-      groups.push({ type: 'col', start: colGroupStart, end: i - 1, collapsed: false })
+      groups.push({ type: 'col', start: colGroupStart, end: i - 1, collapsed: colGroupMeta[colGroupStart]?.collapsed ?? false })
       colGroupStart = -1
     }
   })
   if (colGroupStart !== -1) {
-    groups.push({ type: 'col', start: colGroupStart, end: colGroupMeta.length - 1, collapsed: false })
+    groups.push({ type: 'col', start: colGroupStart, end: colGroupMeta.length - 1, collapsed: colGroupMeta[colGroupStart]?.collapsed ?? false })
   }
 
   // --- Conditional formatting ---
@@ -272,6 +277,7 @@ export function buildSchema(ws: XLSX.WorkSheet, sheetName: string): SheetSchema 
     frozenRows,
     frozenCols,
     mergedCells,
+    rowHeights,
   }
 }
 
@@ -287,5 +293,6 @@ export function emptySchema(sheetName: string): SheetSchema {
     frozenRows: 0,
     frozenCols: 0,
     mergedCells: [],
+    rowHeights: [],
   }
 }
