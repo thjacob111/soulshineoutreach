@@ -32,6 +32,14 @@ export default function DashboardPage() {
   const [portfolioItem, setPortfolioItem] = useState<string | null>(null)
   const [openOrderId, setOpenOrderId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState<string>('Desktop')
+  const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved'>('idle')
+
+  function handleSave() {
+    setSaveState('saving')
+    window.dispatchEvent(new CustomEvent('soul-shine:save'))
+    setTimeout(() => setSaveState('saved'), 400)
+    setTimeout(() => setSaveState('idle'), 2200)
+  }
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -70,6 +78,14 @@ export default function DashboardPage() {
               {Object.keys(VIEW_SIZES).map(v => <option key={v}>{v}</option>)}
             </select>
           </div>
+          <button
+            onClick={handleSave}
+            className={`text-sm px-3 py-1 rounded-lg font-semibold transition-colors ${
+              saveState === 'saved' ? 'bg-green-500 text-white' : 'bg-white/20 text-white hover:bg-white/30'
+            }`}
+          >
+            {saveState === 'saving' ? 'Saving…' : saveState === 'saved' ? '✓ Saved' : 'Save'}
+          </button>
           <button onClick={handleLogout} className="text-white text-sm opacity-80 hover:opacity-100">
             Sign Out
           </button>

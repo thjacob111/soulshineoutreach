@@ -399,6 +399,28 @@ function PricingView({ onBack }: { onBack: () => void }) {
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
   }, [grid, discounts, companyDiscounts, agentDiscounts, planDetails])
 
+  // Always-current ref for the global Save button
+  const latestPricingRef = useRef({ grid, discounts, companyDiscounts, agentDiscounts, planDetails })
+  latestPricingRef.current = { grid, discounts, companyDiscounts, agentDiscounts, planDetails }
+
+  useEffect(() => {
+    const handler = () => {
+      if (isLoadingRef.current) return
+      const s = latestPricingRef.current
+      supabase.from('att_pricing_config').upsert({
+        id: 1,
+        grid: s.grid,
+        discounts: s.discounts,
+        company_discounts: s.companyDiscounts,
+        agent_discounts: s.agentDiscounts,
+        plan_details: s.planDetails,
+        updated_at: new Date().toISOString(),
+      }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 2000) })
+    }
+    window.addEventListener('soul-shine:save', handler)
+    return () => window.removeEventListener('soul-shine:save', handler)
+  }, [])
+
   function setCell(plan: string, line: number, value: string) {
     setGrid(prev => ({ ...prev, [plan]: { ...(prev[plan] || {}), [line]: value } }))
   }
@@ -839,6 +861,21 @@ function CommissionView({ onBack }: { onBack: () => void }) {
       setLoading(false)
     }
     load()
+  }, [])
+
+  const latestCommissionRef = useRef(config)
+  latestCommissionRef.current = config
+
+  useEffect(() => {
+    const handler = () => {
+      supabase.from('att_pricing_config').upsert({
+        id: 1,
+        commission_config: latestCommissionRef.current,
+        updated_at: new Date().toISOString(),
+      }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 2000) })
+    }
+    window.addEventListener('soul-shine:save', handler)
+    return () => window.removeEventListener('soul-shine:save', handler)
   }, [])
 
   function setCell(sectionIdx: number, rowIdx: number, role: string, value: string) {
