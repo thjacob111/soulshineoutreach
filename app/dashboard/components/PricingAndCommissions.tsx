@@ -9,8 +9,18 @@ const PLAN_NAMES = ['Value', 'Extra 2.0', 'Premium 2.0', 'Senior']
 const LINE_COUNTS = [1, 2, 3, 4, 5]
 const FIRSTNET_NOTE = 'Includes FirstNet access — a satellite-backed priority network that gives first responders dedicated cell coverage even during emergencies and network congestion.'
 
-const INTERNET_SECTION_NAMES = new Set(['Fiber', 'Coax', '5G (Air)', 'Internet Riders', 'Internet Discounts'])
+const INTERNET_SECTION_NAMES = new Set([
+  'Fiber', 'Fiber Riders', 'Fiber Discounts',
+  'Coax', 'Coax Riders', 'Coax Discounts',
+  '5G (Air)', '5G Riders', '5G Discounts',
+])
 const TV_SECTION_NAMES = new Set(['Cable / TV', 'Cable Adders', 'Streaming'])
+
+const INTERNET_GROUPS = [
+  { plan: 'Fiber',    riders: 'Fiber Riders',    discounts: 'Fiber Discounts'    },
+  { plan: 'Coax',     riders: 'Coax Riders',     discounts: 'Coax Discounts'     },
+  { plan: '5G (Air)', riders: '5G Riders',        discounts: '5G Discounts'       },
+]
 
 // ── PRICING TYPES ─────────────────────────────────────────
 type PricingGrid = { [plan: string]: { [line: number]: string } }
@@ -133,7 +143,7 @@ interface CommissionRow {
 
 interface CommissionSection {
   name: string
-  type?: 'default' | 'internet' | 'internet-discounts' | 'cable' | 'cable-adders' | 'streaming'
+  type?: 'default' | 'internet' | 'internet-riders' | 'internet-discounts' | 'cable' | 'cable-adders' | 'streaming'
   sectionDetails?: string
   rows: CommissionRow[]
 }
@@ -158,21 +168,37 @@ const DEFAULT_COMMISSION: CommissionConfig = {
       { plan: '2 Gb', standard: '', bundled: '', commissions: {} },
       { plan: '5 Gb', standard: '', bundled: '', commissions: {} },
     ]},
+    { name: 'Fiber Riders', type: 'internet-riders', rows: [
+      { plan: 'Extra Router', price: '', commissions: {} },
+      { plan: 'Security Package', price: '', commissions: {} },
+      { plan: 'Backup Service', price: '', commissions: {} },
+    ]},
+    { name: 'Fiber Discounts', type: 'internet-discounts', rows: [
+      { plan: 'Autopay', price: '', commissions: {} },
+      { plan: 'Low Income', price: '', commissions: {} },
+    ]},
     { name: 'Coax', type: 'internet', sectionDetails: '', rows: [
       { plan: '100 Mbps', standard: '', bundled: '', commissions: {} },
       { plan: '300 Mbps', standard: '', bundled: '', commissions: {} },
       { plan: '500 Mbps', standard: '', bundled: '', commissions: {} },
       { plan: '1 Gb', standard: '', bundled: '', commissions: {} },
     ]},
-    { name: '5G (Air)', type: 'internet', sectionDetails: '', rows: [
-      { plan: '5G Home Internet', standard: '', bundled: '', commissions: {} },
-    ]},
-    { name: 'Internet Riders', type: 'default', rows: [
+    { name: 'Coax Riders', type: 'internet-riders', rows: [
       { plan: 'Extra Router', price: '', commissions: {} },
       { plan: 'Security Package', price: '', commissions: {} },
       { plan: 'Backup Service', price: '', commissions: {} },
     ]},
-    { name: 'Internet Discounts', type: 'internet-discounts', rows: [
+    { name: 'Coax Discounts', type: 'internet-discounts', rows: [
+      { plan: 'Autopay', price: '', commissions: {} },
+      { plan: 'Low Income', price: '', commissions: {} },
+    ]},
+    { name: '5G (Air)', type: 'internet', sectionDetails: '', rows: [
+      { plan: '5G Home Internet', standard: '', bundled: '', commissions: {} },
+    ]},
+    { name: '5G Riders', type: 'internet-riders', rows: [
+      { plan: 'Extra Router', price: '', commissions: {} },
+    ]},
+    { name: '5G Discounts', type: 'internet-discounts', rows: [
       { plan: 'Autopay', price: '', commissions: {} },
       { plan: 'Low Income', price: '', commissions: {} },
     ]},
@@ -677,7 +703,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           <table className="text-xs w-full border-collapse">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border border-gray-200 px-3 py-2 text-left font-semibold text-gray-600 whitespace-nowrap min-w-[80px]">
+                <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-20">
                   {isDiscounts ? 'Discount' : 'Plan'}
                 </th>
                 {showPricing && <th className="border border-gray-200 px-3 py-2 font-semibold text-center whitespace-nowrap min-w-[70px] bg-blue-50 text-blue-700">
@@ -730,87 +756,156 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     )
   }
 
-  // Renders an internet section (Fiber, Coax, 5G) with Standard/Bundled columns
-  function renderInternetSection(section: CommissionSection, si: number) {
-    const detailExpanded = expandedSectionDetails.has(section.name)
+  // Renders one internet type (Fiber/Coax/5G) as a single connected block with plans, riders, discounts
+  function renderInternetGroupBlock(group: { plan: string; riders: string; discounts: string }) {
+    const planSec = commissionConfig.sections.find(s => s.name === group.plan)
+    const planIdx = commissionConfig.sections.findIndex(s => s.name === group.plan)
+    const ridersSec = commissionConfig.sections.find(s => s.name === group.riders)
+    const ridersIdx = commissionConfig.sections.findIndex(s => s.name === group.riders)
+    const discSec = commissionConfig.sections.find(s => s.name === group.discounts)
+    const discIdx = commissionConfig.sections.findIndex(s => s.name === group.discounts)
+    if (!planSec) return null
+    const detailExpanded = expandedSectionDetails.has(group.plan)
+
     return (
-      <div key={si}>
-        <div className="flex items-center gap-2 mb-2">
-          <button
-            onClick={() => setActiveDetail({ kind: 'section', si })}
-            className="text-xs font-semibold text-blue-600 hover:text-blue-800 uppercase tracking-wide underline-offset-2 hover:underline"
-          >
-            {section.name}
+      <div key={group.plan} className="rounded-lg border border-gray-200 overflow-hidden">
+        {/* Section header with overview link */}
+        <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5 flex items-center gap-2">
+          <button onClick={() => setActiveDetail({ kind: 'section', si: planIdx })}
+            className="text-xs font-semibold text-blue-600 hover:text-blue-800 uppercase tracking-wide">
+            {group.plan}
           </button>
-          <span className="text-xs text-gray-300">›</span>
-          <span className="text-xs text-gray-400 italic">{section.sectionDetails ? section.sectionDetails.slice(0, 40) + (section.sectionDetails.length > 40 ? '…' : '') : 'Click to add overview'}</span>
+          {planSec.sectionDetails && (
+            <span className="text-[10px] text-gray-400 italic truncate">{planSec.sectionDetails.slice(0, 50)}{planSec.sectionDetails.length > 50 ? '…' : ''}</span>
+          )}
         </div>
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
+
+        {/* Plans table */}
+        <div className="overflow-x-auto">
           <table className="text-xs w-full border-collapse">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-200 px-2 py-2 text-left font-semibold text-gray-600 whitespace-nowrap min-w-[90px]">Plan</th>
+              <tr className="bg-white">
+                <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-20">Plan</th>
                 {showPricing && <>
-                  <th className="border border-gray-200 px-2 py-2 font-semibold text-center whitespace-nowrap min-w-[70px] bg-blue-50 text-blue-700">Standard</th>
-                  <th className="border border-gray-200 px-2 py-2 font-semibold text-center whitespace-nowrap min-w-[70px] bg-blue-50 text-blue-700">Bundled</th>
-                  <th
-                    className="border border-gray-200 px-2 py-2 font-semibold text-blue-700 text-center whitespace-nowrap w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
-                    onClick={() => toggleSectionDetails(section.name)}
-                  >Details {detailExpanded ? '▼' : '▶'}</th>
+                  <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center whitespace-nowrap w-16 bg-blue-50 text-blue-700">Standard</th>
+                  <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center whitespace-nowrap w-16 bg-blue-50 text-blue-700">Bundled</th>
+                  <th className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
+                    onClick={() => toggleSectionDetails(group.plan)}>
+                    Details {detailExpanded ? '▼' : '▶'}
+                  </th>
                   {detailExpanded && INTERNET_INLINE_FIELDS.map(f => (
-                    <th key={f.key} className="border border-gray-200 px-1 py-1 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 whitespace-nowrap min-w-[60px]">{f.label}</th>
+                    <th key={f.key} className="border border-gray-200 px-1 py-1 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 whitespace-nowrap w-14">{f.label}</th>
                   ))}
                 </>}
                 {showPricing && showCommissions && <th className="bg-gray-300 w-0.5 p-0 border-0" />}
                 {showCommissions && commHeaderCols()}
-                {isAdmin && <th className="border border-gray-200 w-7" />}
+                {isAdmin && <th className="border border-gray-200 w-6" />}
               </tr>
             </thead>
             <tbody>
-              {section.rows.map((row, ri) => (
+              {planSec.rows.map((row, ri) => (
                 <tr key={ri} className="bg-white hover:bg-gray-50">
-                  <td className="border border-gray-200 px-1 py-0.5 font-medium text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap text-center"
-                    onClick={() => setActiveDetail({ kind: 'internet-plan', si, ri })}>{row.plan}</td>
+                  <td className="border border-gray-200 px-1 py-0.5 font-medium text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap w-20"
+                    onClick={() => setActiveDetail({ kind: 'internet-plan', si: planIdx, ri })}>{row.plan}</td>
                   {showPricing && <>
-                    <td className="border border-gray-200 p-0 text-center bg-blue-50/40">
-                      {isAdmin ? (
-                        <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
-                          value={row.standard ?? ''} placeholder="—" onChange={e => setRowField(si, ri, 'standard', e.target.value)} />
-                      ) : <span className="block px-1 py-0.5 text-blue-800">{row.standard || '—'}</span>}
+                    <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-16">
+                      {isAdmin ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                        value={row.standard ?? ''} placeholder="—" onChange={e => setRowField(planIdx, ri, 'standard', e.target.value)} />
+                      : <span className="block px-1 py-0.5 text-blue-800">{row.standard || '—'}</span>}
                     </td>
-                    <td className="border border-gray-200 p-0 text-center bg-blue-50/40">
-                      {isAdmin ? (
-                        <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
-                          value={row.bundled ?? ''} placeholder="—" onChange={e => setRowField(si, ri, 'bundled', e.target.value)} />
-                      ) : <span className="block px-1 py-0.5 text-blue-800">{row.bundled || '—'}</span>}
+                    <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-16">
+                      {isAdmin ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                        value={row.bundled ?? ''} placeholder="—" onChange={e => setRowField(planIdx, ri, 'bundled', e.target.value)} />
+                      : <span className="block px-1 py-0.5 text-blue-800">{row.bundled || '—'}</span>}
                     </td>
-                    <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20">—</td>
+                    <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20 w-14">—</td>
                     {detailExpanded && INTERNET_INLINE_FIELDS.map(f => (
-                      <td key={f.key} className="border border-gray-200 p-0 text-center bg-blue-50/30">
-                        {isAdmin ? (
-                          <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent min-w-[60px]"
-                            value={row.internetDetails?.[f.key] ?? ''} placeholder="—"
-                            onChange={e => updateInternetPlanDetail(si, ri, f.key, e.target.value)} />
-                        ) : <span className="block px-1 py-0.5 text-blue-800 min-w-[60px]">{row.internetDetails?.[f.key] || '—'}</span>}
+                      <td key={f.key} className="border border-gray-200 p-0 text-center bg-blue-50/30 w-14">
+                        {isAdmin ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                          value={row.internetDetails?.[f.key] ?? ''} placeholder="—"
+                          onChange={e => updateInternetPlanDetail(planIdx, ri, f.key, e.target.value)} />
+                        : <span className="block px-1 py-0.5 text-blue-800">{row.internetDetails?.[f.key] || '—'}</span>}
                       </td>
                     ))}
                   </>}
                   {showPricing && showCommissions && <td className="bg-gray-200 w-0.5 p-0 border-0" />}
-                  {showCommissions && commCols(si, ri, row)}
-                  {isAdmin && (
-                    <td className="border border-gray-200 px-1 text-center">
-                      <button onClick={() => removePlanRow(si, ri)} className="text-gray-300 hover:text-red-400">✕</button>
-                    </td>
-                  )}
+                  {showCommissions && commCols(planIdx, ri, row)}
+                  {isAdmin && <td className="border border-gray-200 px-1 text-center">
+                    <button onClick={() => removePlanRow(planIdx, ri)} className="text-gray-300 hover:text-red-400">✕</button>
+                  </td>}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
         {isAdmin && (
-          <button onClick={() => addPlanRow(si)} className="mt-1 w-full text-xs text-blue-600 py-1.5 hover:bg-blue-50 rounded border border-dashed border-blue-200 text-center">
-            + Add Plan
-          </button>
+          <button onClick={() => addPlanRow(planIdx)} className="w-full text-xs text-blue-500 py-1 hover:bg-blue-50 border-t border-dashed border-blue-100 text-center">+ Add Plan</button>
+        )}
+
+        {/* Riders sub-section — touches plans above */}
+        {ridersSec && (showPricing || showCommissions) && (
+          <>
+            <div className="border-t border-gray-200 bg-gray-50 px-3 py-1">
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Riders</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="text-xs w-full border-collapse">
+                <tbody>
+                  {ridersSec.rows.map((row, ri) => (
+                    <tr key={ri} className="bg-white hover:bg-gray-50">
+                      <td className="border border-gray-200 px-1 py-0.5 font-medium text-gray-600 whitespace-nowrap w-20">
+                        {isAdmin ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none bg-transparent"
+                          value={row.plan} placeholder="Rider name…" onChange={e => setRowPlanName(ridersIdx, ri, e.target.value)} />
+                        : row.plan}
+                      </td>
+                      {showPricing && <>
+                        <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-16">
+                          {isAdmin ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                            value={row.price ?? ''} placeholder="—" onChange={e => setRowField(ridersIdx, ri, 'price', e.target.value)} />
+                          : <span className="block px-1 py-0.5 text-blue-800">{row.price || '—'}</span>}
+                        </td>
+                        <td className="border border-gray-200 w-16 bg-blue-50/10" />
+                        <td className="border border-gray-200 w-14 bg-blue-50/10" />
+                      </>}
+                      {showPricing && showCommissions && <td className="bg-gray-200 w-0.5 p-0 border-0" />}
+                      {showCommissions && commCols(ridersIdx, ri, row)}
+                      {isAdmin && <td className="border border-gray-200 px-1 text-center">
+                        <button onClick={() => removePlanRow(ridersIdx, ri)} className="text-gray-300 hover:text-red-400">✕</button>
+                      </td>}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {isAdmin && (
+              <button onClick={() => addPlanRow(ridersIdx)} className="w-full text-xs text-blue-500 py-1 hover:bg-blue-50 border-t border-dashed border-blue-100 text-center">+ Add Rider</button>
+            )}
+          </>
+        )}
+
+        {/* Discounts sub-section — touches riders above */}
+        {discSec && showPricing && (
+          <>
+            <div className="border-t border-gray-200 bg-gray-50 px-3 py-1">
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Discounts</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="text-xs w-full border-collapse">
+                <tbody>
+                  {discSec.rows.map((row, ri) => (
+                    <tr key={ri} className="bg-white hover:bg-gray-50">
+                      <td className="border border-gray-200 px-1 py-0.5 font-medium text-gray-600 whitespace-nowrap w-20">{row.plan}</td>
+                      <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-16">
+                        {isAdmin ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                          value={row.price ?? ''} placeholder="—" onChange={e => setRowField(discIdx, ri, 'price', e.target.value)} />
+                        : <span className="block px-1 py-0.5 text-blue-800">{row.price || '—'}</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     )
@@ -836,7 +931,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           <table className="text-xs w-full border-collapse">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border border-gray-200 px-2 py-2 text-left font-semibold text-gray-600 whitespace-nowrap min-w-[100px]">Plan</th>
+                <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-20">Plan</th>
                 {showPricing && <>
                   <th className="border border-gray-200 px-2 py-2 font-semibold text-center whitespace-nowrap min-w-[70px] bg-blue-50 text-blue-700">Price</th>
                   {!isCableAdders && (
@@ -1067,11 +1162,8 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           <div className="bg-blue-600 px-4 py-2">
             <span className="text-white font-bold text-sm tracking-wide">INTERNET</span>
           </div>
-          <div className="p-3 space-y-4">
-            {internetSections.map(({ s, i }) => {
-              if (s.type === 'internet') return renderInternetSection(s, i)
-              return renderGenericSection(s, i)
-            })}
+          <div className="p-3 space-y-3">
+            {INTERNET_GROUPS.map(group => renderInternetGroupBlock(group))}
           </div>
         </div>
       )}
