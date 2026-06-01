@@ -474,13 +474,13 @@ function PricingView({ onBack }: { onBack: () => void }) {
           <table className="text-xs w-full min-w-max border-collapse border border-gray-300">
             <thead>
               <tr className="bg-gray-100">
-                <th rowSpan={detailsExpanded ? 2 : 1} className="border border-gray-300 px-2 py-1 text-left font-semibold text-gray-600 whitespace-nowrap">Plan</th>
+                <th rowSpan={detailsExpanded ? 2 : 1} className="border border-gray-300 px-1 py-1 text-left font-semibold text-gray-600 whitespace-nowrap w-11">Plan</th>
                 {LINE_COUNTS.map(n => (
                   <th rowSpan={detailsExpanded ? 2 : 1} key={n} className="border border-gray-300 px-1 py-1 font-semibold text-gray-500 text-center whitespace-nowrap w-11">L{n}</th>
                 ))}
                 <th
                   rowSpan={detailsExpanded ? 2 : 1}
-                  className="border border-gray-300 px-2 py-1 font-semibold text-gray-500 text-center whitespace-nowrap cursor-pointer hover:bg-gray-200 select-none"
+                  className="border border-gray-300 px-1 py-1 font-semibold text-gray-500 text-center whitespace-nowrap w-11 cursor-pointer hover:bg-gray-200 select-none"
                   onClick={() => setDetailsExpanded(x => !x)}
                 >
                   Details {detailsExpanded ? '▼' : '▶'}
@@ -505,7 +505,7 @@ function PricingView({ onBack }: { onBack: () => void }) {
               {PLAN_NAMES.map(plan => (
                 <tr key={plan} className="bg-white hover:bg-blue-50/30">
                   <td
-                    className="border border-gray-300 px-2 py-0.5 font-medium text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap"
+                    className="border border-gray-300 px-1 py-0.5 font-medium text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap w-11"
                     onClick={() => setSelectedPlan(plan)}
                   >{plan}</td>
                   {LINE_COUNTS.map(n => (
@@ -522,7 +522,7 @@ function PricingView({ onBack }: { onBack: () => void }) {
                       )}
                     </td>
                   ))}
-                  <td className="border border-gray-300 px-2 py-0.5 text-center text-xs text-gray-300">—</td>
+                  <td className="border border-gray-300 px-1 py-0.5 text-center text-xs text-gray-300 w-11">—</td>
                   {detailsExpanded && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
                     <td key={f.key} className="border border-gray-300 p-0 text-center">
                       {isAdmin ? (
