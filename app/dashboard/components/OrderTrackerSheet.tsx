@@ -236,7 +236,7 @@ export default function OrderTrackerSheet() {
               const internetComm = computeInternetComm(row.internetPlan)
               const hasData = row.lines.some(l => l.plan !== '') || row.internetPlan !== ''
               const totalComm = hasData
-                ? lineComms.reduce((s, c) => s + (c ?? 0), 0) + (internetComm ?? 0)
+                ? lineComms.reduce<number>((s, c) => s + (c ?? 0), 0) + (internetComm ?? 0)
                 : null
               const thomas = totalComm !== null && row.splitPercent
                 ? Math.round(totalComm * row.splitPercent) : null
