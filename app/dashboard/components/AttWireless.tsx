@@ -837,7 +837,7 @@ interface CommissionSection { name: string; rows: CommissionRow[] }
 interface CommissionConfig { roles: string[]; sections: CommissionSection[] }
 
 const DEFAULT_COMMISSION: CommissionConfig = {
-  roles: ['Rep', 'Senior Rep', 'Team Lead', 'Manager'],
+  roles: ['Overall', 'Soul Shine', 'Agent', 'Rep'],
   sections: [
     {
       name: 'Phone Plans',
@@ -849,10 +849,44 @@ const DEFAULT_COMMISSION: CommissionConfig = {
       ],
     },
     {
-      name: 'Internet',
+      name: 'Phone Plan Adders',
       rows: [
-        { plan: '1Gb Fiber', commissions: {} },
-        { plan: 'Fixed Wireless (IFWA)', commissions: {} },
+        { plan: 'Nextup', commissions: {} },
+        { plan: 'Insurance', commissions: {} },
+      ],
+    },
+    {
+      name: 'Fiber',
+      rows: [
+        { plan: '100 Mbps', commissions: {} },
+        { plan: '300 Mbps', commissions: {} },
+        { plan: '500 Mbps', commissions: {} },
+        { plan: '1 Gb', commissions: {} },
+        { plan: '2 Gb', commissions: {} },
+        { plan: '5 Gb', commissions: {} },
+      ],
+    },
+    {
+      name: 'Coax',
+      rows: [
+        { plan: '100 Mbps', commissions: {} },
+        { plan: '300 Mbps', commissions: {} },
+        { plan: '500 Mbps', commissions: {} },
+        { plan: '1 Gb', commissions: {} },
+      ],
+    },
+    {
+      name: '5G (Air)',
+      rows: [
+        { plan: '5G Home Internet', commissions: {} },
+      ],
+    },
+    {
+      name: 'Internet Riders',
+      rows: [
+        { plan: 'Extra Router', commissions: {} },
+        { plan: 'Security Package', commissions: {} },
+        { plan: 'Backup Service', commissions: {} },
       ],
     },
     {
@@ -861,7 +895,27 @@ const DEFAULT_COMMISSION: CommissionConfig = {
         { plan: 'DirecTV Stream', commissions: {} },
       ],
     },
+    {
+      name: 'Streaming',
+      rows: [
+        { plan: 'YouTube TV', commissions: {} },
+        { plan: 'Netflix', commissions: {} },
+        { plan: 'Hulu', commissions: {} },
+        { plan: 'Prime', commissions: {} },
+        { plan: 'HBO Max', commissions: {} },
+        { plan: 'Paramount', commissions: {} },
+        { plan: 'Disney+', commissions: {} },
+      ],
+    },
   ],
+}
+
+function migrateCommissionConfig(saved: CommissionConfig): CommissionConfig {
+  const savedByName = new Map(saved.sections.map(s => [s.name, s]))
+  return {
+    roles: DEFAULT_COMMISSION.roles,
+    sections: DEFAULT_COMMISSION.sections.map(s => savedByName.get(s.name) ?? s),
+  }
 }
 
 function CommissionView({ onBack }: { onBack: () => void }) {
@@ -882,7 +936,9 @@ function CommissionView({ onBack }: { onBack: () => void }) {
         .select('commission_config')
         .eq('id', 1)
         .single()
-      const cfg: CommissionConfig = data?.commission_config ?? DEFAULT_COMMISSION
+      const cfg = data?.commission_config
+        ? migrateCommissionConfig(data.commission_config)
+        : DEFAULT_COMMISSION
       setConfig(cfg)
       setSelectedRole(cfg.roles[0] ?? '')
       setLoading(false)
