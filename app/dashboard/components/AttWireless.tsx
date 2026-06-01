@@ -344,6 +344,16 @@ type DiscountRow = { label: string; value: string; notes?: string }
 type CompanyDiscount = { company: string; discount: string }
 const DEFAULT_AGENT_DISCOUNTS: DiscountRow[] = []
 
+type RetailBenefit = { agent: string; benefit: string; discount: string; duration: string }
+const RETAIL_AGENT_BENEFITS: RetailBenefit[] = [
+  { agent: 'Best Buy', benefit: 'Line Credit',           discount: '$150 (−$4.17/mo)',       duration: '36 months'              },
+  { agent: 'Best Buy', benefit: 'Waived Activation Fee', discount: '−$35',                   duration: '1st bill'               },
+  { agent: 'Best Buy', benefit: 'Apple Care',            discount: 'Free',                   duration: '12 months'              },
+  { agent: 'Costco',   benefit: 'Line Credit',           discount: '$250 (−$6.94/mo)',       duration: '36 months'              },
+  { agent: 'Costco',   benefit: 'Waived Activation Fee', discount: '−$35',                   duration: '1st bill'               },
+  { agent: 'Costco',   benefit: 'Gift Card',             discount: '$100',                   duration: 'Upfront (upgrades too)' },
+]
+
 function PricingView({ onBack }: { onBack: () => void }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [grid, setGrid] = useState<PricingGrid>({})
@@ -353,6 +363,7 @@ function PricingView({ onBack }: { onBack: () => void }) {
   const [showCompanyDb, setShowCompanyDb] = useState(false)
   const [newCompany, setNewCompany] = useState<CompanyDiscount>({ company: '', discount: '' })
   const [agentDiscounts, setAgentDiscounts] = useState<DiscountRow[]>(DEFAULT_AGENT_DISCOUNTS)
+  const [checkedBenefits, setCheckedBenefits] = useState<Set<string>>(new Set())
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -710,6 +721,61 @@ function PricingView({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
+
+      <div>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Retail Agent Benefits</p>
+        <div className="overflow-x-auto rounded-lg border border-gray-200">
+          <table className="text-xs w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="border border-gray-200 w-6 px-1"></th>
+                <th className="border border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-600">Agent</th>
+                <th className="border border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-600">Benefit</th>
+                <th className="border border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-600">Discount</th>
+                <th className="border border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-600">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {['Best Buy', 'Costco'].map(agentGroup => (
+                RETAIL_AGENT_BENEFITS.filter(b => b.agent === agentGroup).map((b, i, arr) => {
+                  const key = `${b.agent}|${b.benefit}`
+                  const checked = checkedBenefits.has(key)
+                  const isFirst = i === 0
+                  return (
+                    <tr
+                      key={key}
+                      className={`cursor-pointer transition-colors ${checked ? 'bg-green-50' : 'hover:bg-gray-50'}`}
+                      onClick={() => setCheckedBenefits(prev => {
+                        const next = new Set(prev)
+                        next.has(key) ? next.delete(key) : next.add(key)
+                        return next
+                      })}
+                    >
+                      <td className="border border-gray-200 px-1 text-center">
+                        <input
+                          type="checkbox"
+                          readOnly
+                          checked={checked}
+                          className="accent-green-500 cursor-pointer"
+                        />
+                      </td>
+                      {isFirst ? (
+                        <td
+                          rowSpan={arr.length}
+                          className="border border-gray-200 px-2 py-1 font-semibold text-gray-700 align-middle"
+                        >{agentGroup}</td>
+                      ) : null}
+                      <td className="border border-gray-200 px-2 py-1 text-gray-700">{b.benefit}</td>
+                      <td className="border border-gray-200 px-2 py-1 text-blue-600 font-medium">{b.discount}</td>
+                      <td className="border border-gray-200 px-2 py-1 text-gray-500">{b.duration}</td>
+                    </tr>
+                  )
+                })
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
 
       {showCompanyDb && (
         <div
