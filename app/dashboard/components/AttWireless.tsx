@@ -355,6 +355,7 @@ function PricingView({ onBack }: { onBack: () => void }) {
   const [agentDiscounts, setAgentDiscounts] = useState<DiscountRow[]>(DEFAULT_AGENT_DISCOUNTS)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [expandedDiscount, setExpandedDiscount] = useState<number | null>(null)
   const [planDetails, setPlanDetails] = useState<PlanDetailsMap>({})
@@ -388,13 +389,18 @@ function PricingView({ onBack }: { onBack: () => void }) {
     setSaved(false)
     saveTimer.current = setTimeout(async () => {
       setSaving(true)
-      await supabase.from('att_pricing_config').upsert({
+      setSaveError(null)
+      const { error } = await supabase.from('att_pricing_config').upsert({
         id: 1, grid, discounts, company_discounts: companyDiscounts,
         agent_discounts: agentDiscounts, plan_details: planDetails, updated_at: new Date().toISOString()
       })
       setSaving(false)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 2000)
+      if (error) {
+        setSaveError(error.message)
+      } else {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 2000)
+      }
     }, 1500)
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
   }, [grid, discounts, companyDiscounts, agentDiscounts, planDetails])
@@ -415,7 +421,15 @@ function PricingView({ onBack }: { onBack: () => void }) {
         agent_discounts: s.agentDiscounts,
         plan_details: s.planDetails,
         updated_at: new Date().toISOString(),
-      }).then(() => { setSaved(true); setTimeout(() => setSaved(false), 2000) })
+      }).then(({ error }) => {
+        if (error) {
+          setSaveError(error.message)
+        } else {
+          setSaveError(null)
+          setSaved(true)
+          setTimeout(() => setSaved(false), 2000)
+        }
+      })
     }
     window.addEventListener('soul-shine:save', handler)
     return () => window.removeEventListener('soul-shine:save', handler)
@@ -459,13 +473,18 @@ function PricingView({ onBack }: { onBack: () => void }) {
 
   async function handleSave() {
     setSaving(true)
-    await supabase.from('att_pricing_config').upsert({
+    setSaveError(null)
+    const { error } = await supabase.from('att_pricing_config').upsert({
       id: 1, grid, discounts, company_discounts: companyDiscounts,
-      agent_discounts: agentDiscounts, updated_at: new Date().toISOString()
+      agent_discounts: agentDiscounts, plan_details: planDetails, updated_at: new Date().toISOString()
     })
     setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    if (error) {
+      setSaveError(error.message)
+    } else {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    }
   }
 
   if (loading) return <div className="text-sm text-gray-400 p-4">Loading...</div>
@@ -485,8 +504,16 @@ function PricingView({ onBack }: { onBack: () => void }) {
       <div className="flex items-center gap-2">
         <button onClick={onBack} className="text-gray-400 hover:text-gray-600 text-lg">←</button>
         <h2 className="font-bold text-gray-800 text-base">Pricing & Promotions</h2>
-        <span className="ml-auto text-xs text-gray-400">
-          {saving ? 'Saving…' : saved ? '✓ Saved' : !isAdmin ? 'View only' : ''}
+        <span className="ml-auto text-xs">
+          {saving ? (
+            <span className="text-gray-400">Saving…</span>
+          ) : saveError ? (
+            <span className="text-red-500" title={saveError}>⚠ Save failed: {saveError}</span>
+          ) : saved ? (
+            <span className="text-green-600">✓ Saved</span>
+          ) : !isAdmin ? (
+            <span className="text-gray-400">View only</span>
+          ) : null}
         </span>
       </div>
 
