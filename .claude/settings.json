@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "git -C \"C:\\Users\\Thomas\\Documents\\AgentX\\Magnum Opus\\Software\\Soul Shine\" add -A & git -C \"C:\\Users\\Thomas\\Documents\\AgentX\\Magnum Opus\\Software\\Soul Shine\" commit -m \"auto-deploy\" 2>nul & git -C \"C:\\Users\\Thomas\\Documents\\AgentX\\Magnum Opus\\Software\\Soul Shine\" push origin main 2>nul"
+          }
+        ]
+      }
+    ]
+  }
+}
