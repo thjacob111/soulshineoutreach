@@ -4,8 +4,9 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import OrderFormFields, { OrderForm, AccessoryItem, EMPTY_FORM, Sect, Row } from './OrderFormFields'
 import OrderTrackerSheet from './OrderTrackerSheet'
+import PricingAndCommissions from './PricingAndCommissions'
 
-type View = 'home' | 'new-order' | 'log' | 'view-order' | 'edit-order' | 'pricing' | 'commission'
+type View = 'home' | 'new-order' | 'log' | 'view-order' | 'edit-order' | 'pricing' | 'commission' | 'pricing-commissions'
 
 interface AttOrder extends OrderForm { id: string; created_at: string }
 
@@ -164,16 +165,10 @@ NOTES: ${o.notes}`
             Order Log
           </button>
           <button
-            onClick={() => setView('pricing')}
+            onClick={() => setView('pricing-commissions')}
             className="w-full bg-white border border-blue-600 text-blue-600 rounded-lg py-2 text-sm font-semibold hover:bg-blue-50 transition-colors"
           >
-            Pricing & Promotions
-          </button>
-          <button
-            onClick={() => setView('commission')}
-            className="w-full bg-white border border-blue-600 text-blue-600 rounded-lg py-2 text-sm font-semibold hover:bg-blue-50 transition-colors"
-          >
-            Commission
+            Pricing & Commissions
           </button>
         </div>
       </div>
@@ -228,6 +223,7 @@ NOTES: ${o.notes}`
 
   if (view === 'pricing') return <PricingView onBack={() => setView('home')} />
   if (view === 'commission') return <CommissionView onBack={() => setView('home')} />
+  if (view === 'pricing-commissions') return <PricingAndCommissions onBack={() => setView('home')} />
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
