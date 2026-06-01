@@ -247,22 +247,100 @@ NOTES: ${o.notes}`
   )
 }
 
+// ── PLAN DETAILS ─────────────────────────────────────────
+
+interface PlanDetails {
+  call_text_cell_tower_priority: string
+  call_text_calling_limit: string
+  call_text_texting_limit: string
+  data_limit: string
+  data_speed: string
+  hotspot_limit: string
+  hotspot_speed: string
+  intl_calling_limit: string
+  intl_coverage_map: string
+  intl_data_roaming_limit: string
+  intl_data_roaming_speed: string
+  ld_places: string
+  ld_calling_limit: string
+}
+
+type PlanDetailsMap = { [plan: string]: PlanDetails }
+
+const EMPTY_PLAN_DETAILS: PlanDetails = {
+  call_text_cell_tower_priority: '',
+  call_text_calling_limit: '',
+  call_text_texting_limit: '',
+  data_limit: '',
+  data_speed: '',
+  hotspot_limit: '',
+  hotspot_speed: '',
+  intl_calling_limit: '',
+  intl_coverage_map: '',
+  intl_data_roaming_limit: '',
+  intl_data_roaming_speed: '',
+  ld_places: '',
+  ld_calling_limit: '',
+}
+
+const PLAN_DETAIL_SECTIONS: { label: string; fields: { key: keyof PlanDetails; label: string }[] }[] = [
+  {
+    label: 'CALL & TEXT',
+    fields: [
+      { key: 'call_text_cell_tower_priority', label: 'Cell Tower Priority' },
+      { key: 'call_text_calling_limit', label: 'Calling Limit' },
+      { key: 'call_text_texting_limit', label: 'Texting Limit' },
+    ],
+  },
+  {
+    label: 'DATA',
+    fields: [
+      { key: 'data_limit', label: 'Data Limit' },
+      { key: 'data_speed', label: 'Data Speed' },
+    ],
+  },
+  {
+    label: 'HOTSPOT',
+    fields: [
+      { key: 'hotspot_limit', label: 'Hotspot Limit' },
+      { key: 'hotspot_speed', label: 'Hotspot Speed' },
+    ],
+  },
+  {
+    label: 'INTERNATIONAL',
+    fields: [
+      { key: 'intl_calling_limit', label: 'International Calling Limit' },
+      { key: 'intl_coverage_map', label: 'International Coverage Map' },
+      { key: 'intl_data_roaming_limit', label: 'International Data Roaming Limit' },
+      { key: 'intl_data_roaming_speed', label: 'International Data Roaming Speed' },
+    ],
+  },
+  {
+    label: 'LONG DISTANCE',
+    fields: [
+      { key: 'ld_places', label: 'Long Distance Calling Place(s)' },
+      { key: 'ld_calling_limit', label: 'Long Distance Calling Limit' },
+    ],
+  },
+]
+
 // ── PRICING VIEW ──────────────────────────────────────────
 const ADMIN_EMAIL = 'thjacob111@gmail.com'
 const PLAN_NAMES = ['Value', 'Extra 2.0', 'Premium 2.0', 'Senior']
 const LINE_COUNTS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-const DEFAULT_DISCOUNTS = [
-  { label: 'Military', value: '' },
-  { label: 'Nurse', value: '' },
-  { label: 'First Responder — Police', value: '' },
-  { label: 'First Responder — EMS', value: '' },
-  { label: 'First Responder — Firefighter', value: '' },
-  { label: 'Employee', value: '' },
-  { label: 'Company (FAN)', value: '' },
+const FIRSTNET_NOTE = 'Includes FirstNet access — a satellite-backed priority network that gives first responders dedicated cell coverage even during emergencies and network congestion.'
+const DEFAULT_DISCOUNTS: DiscountRow[] = [
+  { label: 'Military', value: '', notes: '' },
+  { label: 'Nurse', value: '', notes: '' },
+  { label: 'First Responder — Police', value: '', notes: FIRSTNET_NOTE },
+  { label: 'First Responder — EMS', value: '', notes: FIRSTNET_NOTE },
+  { label: 'First Responder — Firefighter', value: '', notes: FIRSTNET_NOTE },
+  { label: 'Employee', value: '', notes: '' },
+  { label: 'Company (FAN)', value: '', notes: '' },
 ]
 
 type PricingGrid = { [plan: string]: { [line: number]: string } }
-type DiscountRow = { label: string; value: string }
+type DiscountRow = { label: string; value: string; notes?: string }
 type CompanyDiscount = { company: string; discount: string }
 const DEFAULT_AGENT_DISCOUNTS: DiscountRow[] = []
 
@@ -278,6 +356,10 @@ function PricingView({ onBack }: { onBack: () => void }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [expandedDiscount, setExpandedDiscount] = useState<number | null>(null)
+  const [planDetails, setPlanDetails] = useState<PlanDetailsMap>({})
+  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const [detailsExpanded, setDetailsExpanded] = useState(false)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isLoadingRef = useRef(true)
 
@@ -285,12 +367,13 @@ function PricingView({ onBack }: { onBack: () => void }) {
     async function load() {
       const { data: { user } } = await supabase.auth.getUser()
       setIsAdmin(user?.email === ADMIN_EMAIL)
-      const { data } = await supabase.from('att_pricing_config').select('grid, discounts, company_discounts, agent_discounts').eq('id', 1).single()
+      const { data } = await supabase.from('att_pricing_config').select('grid, discounts, company_discounts, agent_discounts, plan_details').eq('id', 1).single()
       if (data) {
         setGrid(data.grid || {})
         setDiscounts(data.discounts?.length ? data.discounts : DEFAULT_DISCOUNTS)
         setCompanyDiscounts(data.company_discounts || [])
         setAgentDiscounts(data.agent_discounts || DEFAULT_AGENT_DISCOUNTS)
+        setPlanDetails(data.plan_details || {})
       }
       setLoading(false)
     }
@@ -307,14 +390,14 @@ function PricingView({ onBack }: { onBack: () => void }) {
       setSaving(true)
       await supabase.from('att_pricing_config').upsert({
         id: 1, grid, discounts, company_discounts: companyDiscounts,
-        agent_discounts: agentDiscounts, updated_at: new Date().toISOString()
+        agent_discounts: agentDiscounts, plan_details: planDetails, updated_at: new Date().toISOString()
       })
       setSaving(false)
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     }, 1500)
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
-  }, [grid, discounts, companyDiscounts, agentDiscounts])
+  }, [grid, discounts, companyDiscounts, agentDiscounts, planDetails])
 
   function setCell(plan: string, line: number, value: string) {
     setGrid(prev => ({ ...prev, [plan]: { ...(prev[plan] || {}), [line]: value } }))
@@ -322,6 +405,10 @@ function PricingView({ onBack }: { onBack: () => void }) {
 
   function setDiscount(idx: number, value: string) {
     setDiscounts(prev => prev.map((d, i) => i !== idx ? d : { ...d, value }))
+  }
+
+  function setDiscountNotes(idx: number, notes: string) {
+    setDiscounts(prev => prev.map((d, i) => i !== idx ? d : { ...d, notes }))
   }
 
   function setAgentDiscount(idx: number, field: 'label' | 'value', value: string) {
@@ -341,6 +428,13 @@ function PricingView({ onBack }: { onBack: () => void }) {
     setNewCompany({ company: '', discount: '' })
   }
 
+  function setPlanDetail(plan: string, field: keyof PlanDetails, value: string) {
+    setPlanDetails(prev => ({
+      ...prev,
+      [plan]: { ...(prev[plan] || EMPTY_PLAN_DETAILS), [field]: value },
+    }))
+  }
+
   async function handleSave() {
     setSaving(true)
     await supabase.from('att_pricing_config').upsert({
@@ -353,6 +447,16 @@ function PricingView({ onBack }: { onBack: () => void }) {
   }
 
   if (loading) return <div className="text-sm text-gray-400 p-4">Loading...</div>
+
+  if (selectedPlan !== null) return (
+    <PlanDetailView
+      plan={selectedPlan}
+      details={planDetails[selectedPlan] || EMPTY_PLAN_DETAILS}
+      isAdmin={isAdmin}
+      onBack={() => setSelectedPlan(null)}
+      onChange={(field, value) => setPlanDetail(selectedPlan, field, value)}
+    />
+  )
 
   return (
     <div className="space-y-5">
@@ -370,16 +474,40 @@ function PricingView({ onBack }: { onBack: () => void }) {
           <table className="text-xs w-full min-w-max border-collapse border border-gray-300">
             <thead>
               <tr className="bg-gray-100">
-                <th className="border border-gray-300 px-2 py-1 text-left font-semibold text-gray-600 whitespace-nowrap">Plan</th>
+                <th rowSpan={detailsExpanded ? 2 : 1} className="border border-gray-300 px-2 py-1 text-left font-semibold text-gray-600 whitespace-nowrap">Plan</th>
                 {LINE_COUNTS.map(n => (
-                  <th key={n} className="border border-gray-300 px-1 py-1 font-semibold text-gray-500 text-center whitespace-nowrap w-11">L{n}</th>
+                  <th rowSpan={detailsExpanded ? 2 : 1} key={n} className="border border-gray-300 px-1 py-1 font-semibold text-gray-500 text-center whitespace-nowrap w-11">L{n}</th>
+                ))}
+                <th
+                  rowSpan={detailsExpanded ? 2 : 1}
+                  className="border border-gray-300 px-2 py-1 font-semibold text-gray-500 text-center whitespace-nowrap cursor-pointer hover:bg-gray-200 select-none"
+                  onClick={() => setDetailsExpanded(x => !x)}
+                >
+                  Details {detailsExpanded ? '▼' : '▶'}
+                </th>
+                {detailsExpanded && PLAN_DETAIL_SECTIONS.map(s => (
+                  <th key={s.label} colSpan={s.fields.length} className="border border-gray-300 px-1 py-0.5 text-[10px] font-semibold text-gray-500 uppercase tracking-wide text-center bg-blue-50/50 whitespace-nowrap">
+                    {s.label}
+                  </th>
                 ))}
               </tr>
+              {detailsExpanded && (
+                <tr className="bg-blue-50/30">
+                  {PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
+                    <th key={f.key} className="border border-gray-300 px-1 py-0.5 text-[9px] font-medium text-gray-500 text-center whitespace-nowrap max-w-[72px]">
+                      {f.label}
+                    </th>
+                  ))}
+                </tr>
+              )}
             </thead>
             <tbody>
               {PLAN_NAMES.map(plan => (
                 <tr key={plan} className="bg-white hover:bg-blue-50/30">
-                  <td className="border border-gray-300 px-2 py-0.5 font-medium text-gray-700 whitespace-nowrap">{plan}</td>
+                  <td
+                    className="border border-gray-300 px-2 py-0.5 font-medium text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap"
+                    onClick={() => setSelectedPlan(plan)}
+                  >{plan}</td>
                   {LINE_COUNTS.map(n => (
                     <td key={n} className="border border-gray-300 p-0 text-center">
                       {isAdmin ? (
@@ -394,6 +522,21 @@ function PricingView({ onBack }: { onBack: () => void }) {
                       )}
                     </td>
                   ))}
+                  <td className="border border-gray-300 px-2 py-0.5 text-center text-xs text-gray-300">—</td>
+                  {detailsExpanded && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
+                    <td key={f.key} className="border border-gray-300 p-0 text-center">
+                      {isAdmin ? (
+                        <input
+                          className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-50 bg-transparent min-w-[60px]"
+                          value={planDetails[plan]?.[f.key] ?? ''}
+                          placeholder="—"
+                          onChange={e => setPlanDetail(plan, f.key, e.target.value)}
+                        />
+                      ) : (
+                        <span className="block px-1 py-0.5 text-gray-700 min-w-[60px]">{planDetails[plan]?.[f.key] || '—'}</span>
+                      )}
+                    </td>
+                  ))}
                 </tr>
               ))}
             </tbody>
@@ -404,43 +547,85 @@ function PricingView({ onBack }: { onBack: () => void }) {
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Occupational Discounts</p>
         <div className="rounded-lg border border-gray-200 divide-y divide-gray-100">
-          {discounts.map((d, i) => d.label === 'Company (FAN)' ? (
-            <div
-              key={i}
-              className="flex items-center px-3 py-2 gap-3 cursor-pointer hover:bg-gray-50"
-              onClick={() => setShowCompanyDb(true)}
-            >
-              <span className="text-xs text-gray-600 shrink-0">Company (FAN)</span>
-              <div className="flex items-center gap-2 ml-auto" onClick={e => e.stopPropagation()}>
-                <input
-                  className="w-28 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
-                  value={companySearch}
-                  placeholder="Search company..."
-                  onChange={e => {
-                    const val = e.target.value
-                    setCompanySearch(val)
-                    const match = companyDiscounts.find(c => c.company.toLowerCase() === val.toLowerCase())
-                    setDiscount(i, match?.discount ?? '')
-                  }}
-                />
-                <span className="text-xs font-medium text-gray-700 w-14 text-right">{d.value || '—'}</span>
+          {discounts.map((d, i) => {
+            const isExpanded = expandedDiscount === i
+            const toggle = () => setExpandedDiscount(isExpanded ? null : i)
+            if (d.label === 'Company (FAN)') return (
+              <div key={i}>
+                <div className="flex items-center px-3 py-2 gap-3 cursor-pointer hover:bg-gray-50" onClick={toggle}>
+                  <span className="text-xs text-gray-600 shrink-0">Company (FAN)</span>
+                  <div className="flex items-center gap-2 ml-auto" onClick={e => e.stopPropagation()}>
+                    <input
+                      className="w-28 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                      value={companySearch}
+                      placeholder="Search company..."
+                      onChange={e => {
+                        const val = e.target.value
+                        setCompanySearch(val)
+                        const match = companyDiscounts.find(c => c.company.toLowerCase() === val.toLowerCase())
+                        setDiscount(i, match?.discount ?? '')
+                      }}
+                      onClick={() => setShowCompanyDb(true)}
+                    />
+                    {d.value && <span className="text-xs font-semibold text-white bg-blue-600 rounded px-2 py-0.5 shrink-0">{d.value}</span>}
+                  </div>
+                  <span className="text-gray-300 text-[10px]">{isExpanded ? '▲' : '▼'}</span>
+                </div>
+                {isExpanded && (
+                  <div className="px-3 pb-2 pt-1 bg-gray-50 border-t border-gray-100">
+                    {isAdmin ? (
+                      <textarea
+                        className="w-full text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none"
+                        rows={2}
+                        value={d.notes ?? ''}
+                        placeholder="Special features or notes..."
+                        onChange={e => setDiscountNotes(i, e.target.value)}
+                      />
+                    ) : d.notes ? (
+                      <p className="text-xs text-gray-500 italic">{d.notes}</p>
+                    ) : null}
+                  </div>
+                )}
               </div>
-            </div>
-          ) : (
-            <div key={i} className="flex items-center justify-between px-3 py-2 gap-3">
-              <span className="text-xs text-gray-600">{d.label}</span>
-              {isAdmin ? (
-                <input
-                  className="w-32 text-xs text-right border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
-                  value={d.value}
-                  placeholder="e.g. 25% off"
-                  onChange={e => setDiscount(i, e.target.value)}
-                />
-              ) : (
-                <span className="text-xs font-medium text-gray-700">{d.value || '—'}</span>
-              )}
-            </div>
-          ))}
+            )
+            return (
+              <div key={i}>
+                <div className="flex items-center justify-between px-3 py-2 gap-3 cursor-pointer hover:bg-gray-50" onClick={toggle}>
+                  <span className="text-xs text-gray-600">{d.label}</span>
+                  <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                    {isAdmin ? (
+                      <input
+                        className="w-28 text-xs text-right border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                        value={d.value}
+                        placeholder="e.g. 25% off"
+                        onChange={e => setDiscount(i, e.target.value)}
+                      />
+                    ) : d.value ? (
+                      <span className="text-xs font-semibold text-white bg-blue-600 rounded px-2 py-0.5">{d.value}</span>
+                    ) : (
+                      <span className="text-xs text-gray-300">—</span>
+                    )}
+                    <span className="text-gray-300 text-[10px]">{isExpanded ? '▲' : '▼'}</span>
+                  </div>
+                </div>
+                {isExpanded && (
+                  <div className="px-3 pb-2 pt-1 bg-gray-50 border-t border-gray-100">
+                    {isAdmin ? (
+                      <textarea
+                        className="w-full text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none"
+                        rows={2}
+                        value={d.notes ?? ''}
+                        placeholder="Special features or notes..."
+                        onChange={e => setDiscountNotes(i, e.target.value)}
+                      />
+                    ) : d.notes ? (
+                      <p className="text-xs text-gray-500 italic">{d.notes}</p>
+                    ) : null}
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </div>
 
@@ -545,6 +730,53 @@ function PricingView({ onBack }: { onBack: () => void }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+// ── PLAN DETAIL VIEW ─────────────────────────────────────
+
+function PlanDetailView({
+  plan,
+  details,
+  isAdmin,
+  onBack,
+  onChange,
+}: {
+  plan: string
+  details: PlanDetails
+  isAdmin: boolean
+  onBack: () => void
+  onChange: (field: keyof PlanDetails, value: string) => void
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <button onClick={onBack} className="text-gray-400 hover:text-gray-600 text-lg">←</button>
+        <h2 className="font-bold text-gray-800 text-base">{plan} — Plan Details</h2>
+      </div>
+      {PLAN_DETAIL_SECTIONS.map(section => (
+        <div key={section.label}>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{section.label}</p>
+          <div className="rounded-lg border border-gray-200 divide-y divide-gray-100">
+            {section.fields.map(field => (
+              <div key={field.key} className="flex items-center px-3 py-2 gap-3">
+                <span className="text-xs text-gray-500 w-52 shrink-0">{field.label}</span>
+                {isAdmin ? (
+                  <input
+                    className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                    value={details[field.key]}
+                    placeholder="—"
+                    onChange={e => onChange(field.key, e.target.value)}
+                  />
+                ) : (
+                  <span className="text-xs text-gray-700 flex-1">{details[field.key] || '—'}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   )
 }
@@ -738,7 +970,7 @@ function CommissionView({ onBack }: { onBack: () => void }) {
             <table className="text-xs w-full border-collapse">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-200 px-3 py-2 text-left font-semibold text-gray-600 whitespace-nowrap min-w-[120px]">Plan</th>
+                  <th className="border border-gray-200 px-3 py-2 text-center font-semibold text-gray-600 whitespace-nowrap min-w-[80px]">Plan</th>
                   {config.roles.map(role => (
                     <th
                       key={role}
@@ -755,10 +987,10 @@ function CommissionView({ onBack }: { onBack: () => void }) {
               <tbody>
                 {section.rows.map((row, ri) => (
                   <tr key={ri} className="bg-white hover:bg-gray-50">
-                    <td className="border border-gray-200 px-2 py-0.5">
+                    <td className="border border-gray-200 px-1 py-0.5 text-center">
                       {isAdmin ? (
                         <input
-                          className="w-full text-xs px-1 py-0.5 focus:outline-none focus:bg-blue-50 bg-transparent"
+                          className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-50 bg-transparent"
                           value={row.plan}
                           placeholder="Plan name..."
                           onChange={e => setPlanName(si, ri, e.target.value)}
