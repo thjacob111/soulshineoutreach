@@ -247,6 +247,8 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   const [commissionConfig, setCommissionConfig] = useState<CommissionConfig>(DEFAULT_COMMISSION)
   const [selectedRole, setSelectedRole] = useState('')
   const [newRole, setNewRole] = useState('')
+  const [showPricing, setShowPricing] = useState(true)
+  const [showCommissions, setShowCommissions] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -474,44 +476,59 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
         </span>
       </div>
 
-      {/* Role selector */}
-      <div className="flex items-center gap-2">
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Your Role</label>
-        <select
-          value={selectedRole}
-          onChange={e => setSelectedRole(e.target.value)}
-          className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-blue-400"
-        >
-          {commissionConfig.roles.map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
+      {/* View toggles */}
+      <div className="flex items-center gap-5 bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" checked={showPricing} onChange={e => setShowPricing(e.target.checked)} className="w-4 h-4 accent-blue-600 cursor-pointer" />
+          <span className="text-sm font-semibold text-blue-700">Pricing</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" checked={showCommissions} onChange={e => setShowCommissions(e.target.checked)} className="w-4 h-4 accent-green-600 cursor-pointer" />
+          <span className="text-sm font-semibold text-green-700">Commissions</span>
+        </label>
       </div>
 
+      {/* Role selector — only relevant when commissions are visible */}
+      {showCommissions && (
+        <div className="flex items-center gap-2">
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Your Role</label>
+          <select
+            value={selectedRole}
+            onChange={e => setSelectedRole(e.target.value)}
+            className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-green-400"
+          >
+            {commissionConfig.roles.map(r => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </div>
+      )}
+
       {/* Admin: manage roles */}
-      {isAdmin && (
+      {isAdmin && showCommissions && (
         <div>
           <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Roles</p>
           <div className="flex flex-wrap gap-2 mb-2">
             {commissionConfig.roles.map(r => (
-              <span key={r} className="flex items-center gap-1 text-xs bg-blue-50 border border-blue-200 text-blue-700 rounded-full px-2.5 py-1">
+              <span key={r} className="flex items-center gap-1 text-xs bg-green-50 border border-green-200 text-green-700 rounded-full px-2.5 py-1">
                 {r}
-                <button onClick={() => removeRole(r)} className="text-blue-300 hover:text-red-400 ml-1 leading-none">✕</button>
+                <button onClick={() => removeRole(r)} className="text-green-300 hover:text-red-400 ml-1 leading-none">✕</button>
               </span>
             ))}
           </div>
           <div className="flex gap-2">
             <input
-              className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+              className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-green-400"
               placeholder="Add role..."
               value={newRole}
               onChange={e => setNewRole(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addRole()}
             />
-            <button onClick={addRole} className="text-xs bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Add</button>
+            <button onClick={addRole} className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Add</button>
           </div>
         </div>
       )}
 
       {/* Monthly Plan Pricing + Commissions */}
+      {(showPricing || showCommissions) && (
       <div>
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Monthly Plan Pricing & Commissions</p>
         <div className="overflow-x-auto">
@@ -519,16 +536,16 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
             <thead>
               <tr className="bg-gray-100">
                 <th rowSpan={rs} className="border border-gray-300 px-1 py-1 text-left font-semibold text-gray-600 whitespace-nowrap w-24">Plan</th>
-                {LINE_COUNTS.map(n => (
-                  <th rowSpan={rs} key={n} className="border border-gray-300 px-1 py-1 font-semibold text-gray-500 text-center whitespace-nowrap w-11">L{n}</th>
+                {showPricing && LINE_COUNTS.map(n => (
+                  <th rowSpan={rs} key={n} className="border border-gray-300 px-1 py-1 font-semibold text-blue-700 text-center whitespace-nowrap w-11 bg-blue-50">L{n}</th>
                 ))}
-                <th rowSpan={rs} className="bg-gray-300 w-0.5 p-0 border-0" />
-                {commissionConfig.roles.map(role => (
+                {showPricing && showCommissions && <th rowSpan={rs} className="bg-gray-300 w-0.5 p-0 border-0" />}
+                {showCommissions && commissionConfig.roles.map(role => (
                   <th
                     rowSpan={rs}
                     key={role}
                     className={`border border-gray-300 px-1 py-1 font-semibold text-center whitespace-nowrap w-16 transition-colors ${
-                      role === selectedRole ? 'bg-blue-600 text-white' : 'text-gray-500'
+                      role === selectedRole ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'
                     }`}
                   >{role}</th>
                 ))}
@@ -559,42 +576,42 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               {PLAN_NAMES.map(plan => {
                 const commRow = phoneSection?.rows.find(r => r.plan === plan)
                 return (
-                  <tr key={plan} className="bg-white hover:bg-blue-50/30">
+                  <tr key={plan} className="bg-white hover:bg-gray-50/80">
                     <td
-                      className="border border-gray-300 px-1 py-0.5 font-medium text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap"
+                      className="border border-gray-300 px-1 py-0.5 font-medium text-gray-700 hover:text-blue-700 cursor-pointer whitespace-nowrap"
                       onClick={() => setSelectedPlan(plan)}
                     >{plan}</td>
-                    {LINE_COUNTS.map(n => (
-                      <td key={n} className="border border-gray-300 p-0 text-center">
+                    {showPricing && LINE_COUNTS.map(n => (
+                      <td key={n} className="border border-gray-300 p-0 text-center bg-blue-50/40">
                         {isAdmin ? (
                           <input
-                            className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-50 bg-transparent"
+                            className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
                             value={grid[plan]?.[n] ?? ''}
                             placeholder="—"
                             onChange={e => setPricingCell(plan, n, e.target.value)}
                           />
                         ) : (
-                          <span className="block px-1 py-0.5 text-gray-700">{grid[plan]?.[n] || '—'}</span>
+                          <span className="block px-1 py-0.5 text-blue-800">{grid[plan]?.[n] || '—'}</span>
                         )}
                       </td>
                     ))}
-                    <td className="bg-gray-200 w-0.5 p-0 border-0" />
-                    {commissionConfig.roles.map(role => (
+                    {showPricing && showCommissions && <td className="bg-gray-200 w-0.5 p-0 border-0" />}
+                    {showCommissions && commissionConfig.roles.map(role => (
                       <td
                         key={role}
-                        className={`border border-gray-300 p-0 text-center transition-colors ${role === selectedRole ? 'bg-blue-50' : ''}`}
+                        className={`border border-gray-300 p-0 text-center transition-colors ${role === selectedRole ? 'bg-green-50' : 'bg-green-50/30'}`}
                       >
                         {isAdmin ? (
                           <input
                             className={`w-full text-xs text-center px-1 py-0.5 focus:outline-none bg-transparent ${
-                              role === selectedRole ? 'focus:bg-blue-100' : 'focus:bg-blue-50'
+                              role === selectedRole ? 'focus:bg-green-100' : 'focus:bg-green-50'
                             }`}
                             value={commRow?.commissions[role] ?? ''}
                             placeholder="—"
                             onChange={e => setPhoneCommCell(plan, role, e.target.value)}
                           />
                         ) : (
-                          <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-blue-700' : 'text-gray-600'}`}>
+                          <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>
                             {commRow?.commissions[role] || '—'}
                           </span>
                         )}
@@ -622,21 +639,25 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           </table>
         </div>
       </div>
+      )}
 
+      {/* Pricing-only sections: Occupational Discounts, Agent Applied Discounts, Retail Agent Benefits */}
+      {showPricing && (
+        <>
       {/* Occupational Discounts */}
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Occupational Discounts</p>
-        <div className="rounded-lg border border-gray-200 divide-y divide-gray-100">
+        <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">Occupational Discounts</p>
+        <div className="rounded-lg border border-blue-100 divide-y divide-blue-50">
           {discounts.map((d, i) => {
             const isExpanded = expandedDiscount === i
             const toggle = () => setExpandedDiscount(isExpanded ? null : i)
             if (d.label === 'Company (FAN)') return (
-              <div key={i}>
-                <div className="flex items-center px-3 py-2 gap-3 cursor-pointer hover:bg-gray-50" onClick={toggle}>
+              <div key={i} className="bg-blue-50/20">
+                <div className="flex items-center px-3 py-2 gap-3 cursor-pointer hover:bg-blue-50/50" onClick={toggle}>
                   <span className="text-xs text-gray-600 shrink-0">Company (FAN)</span>
                   <div className="flex items-center gap-2 ml-auto" onClick={e => e.stopPropagation()}>
                     <input
-                      className="w-28 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                      className="w-28 text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
                       value={companySearch}
                       placeholder="Search company..."
                       onChange={e => {
@@ -652,10 +673,10 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                   <span className="text-gray-300 text-[10px]">{isExpanded ? '▲' : '▼'}</span>
                 </div>
                 {isExpanded && (
-                  <div className="px-3 pb-2 pt-1 bg-gray-50 border-t border-gray-100">
+                  <div className="px-3 pb-2 pt-1 bg-blue-50/30 border-t border-blue-100">
                     {isAdmin ? (
                       <textarea
-                        className="w-full text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none"
+                        className="w-full text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none"
                         rows={2}
                         value={d.notes ?? ''}
                         placeholder="Special features or notes..."
@@ -667,13 +688,13 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               </div>
             )
             return (
-              <div key={i}>
-                <div className="flex items-center justify-between px-3 py-2 gap-3 cursor-pointer hover:bg-gray-50" onClick={toggle}>
+              <div key={i} className="bg-blue-50/20">
+                <div className="flex items-center justify-between px-3 py-2 gap-3 cursor-pointer hover:bg-blue-50/50" onClick={toggle}>
                   <span className="text-xs text-gray-600">{d.label}</span>
                   <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                     {isAdmin ? (
                       <input
-                        className="w-28 text-xs text-right border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                        className="w-28 text-xs text-right border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
                         value={d.value}
                         placeholder="e.g. 25% off"
                         onChange={e => setDiscount(i, e.target.value)}
@@ -687,10 +708,10 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                   </div>
                 </div>
                 {isExpanded && (
-                  <div className="px-3 pb-2 pt-1 bg-gray-50 border-t border-gray-100">
+                  <div className="px-3 pb-2 pt-1 bg-blue-50/30 border-t border-blue-100">
                     {isAdmin ? (
                       <textarea
-                        className="w-full text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none"
+                        className="w-full text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none"
                         rows={2}
                         value={d.notes ?? ''}
                         placeholder="Special features or notes..."
@@ -707,18 +728,18 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
 
       {/* Agent Applied Discounts */}
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Agent Applied Discounts</p>
-        <div className="rounded-lg border border-gray-200 divide-y divide-gray-100">
+        <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">Agent Applied Discounts</p>
+        <div className="rounded-lg border border-blue-100 divide-y divide-blue-50 bg-blue-50/20">
           {agentDiscounts.map((d, i) => (
             <div key={i} className="flex items-center gap-2 px-3 py-2">
               <input
-                className="flex-1 min-w-0 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                className="flex-1 min-w-0 text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
                 value={d.label}
                 placeholder="Discount name..."
                 onChange={e => setAgentDiscount(i, 'label', e.target.value)}
               />
               <input
-                className="w-24 text-xs text-right border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                className="w-24 text-xs text-right border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
                 value={d.value}
                 placeholder="Amount..."
                 onChange={e => setAgentDiscount(i, 'value', e.target.value)}
@@ -740,16 +761,16 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
 
       {/* Retail Agent Benefits */}
       <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Retail Agent Benefits</p>
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">Retail Agent Benefits</p>
+        <div className="overflow-x-auto rounded-lg border border-blue-100">
           <table className="text-xs w-full border-collapse">
             <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-200 w-6 px-1"></th>
-                <th className="border border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-600">Agent</th>
-                <th className="border border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-600">Benefit</th>
-                <th className="border border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-600">Discount</th>
-                <th className="border border-gray-200 px-2 py-1.5 text-left font-semibold text-gray-600">Duration</th>
+              <tr className="bg-blue-50">
+                <th className="border border-blue-200 w-6 px-1"></th>
+                <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Agent</th>
+                <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Benefit</th>
+                <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Discount</th>
+                <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Duration</th>
               </tr>
             </thead>
             <tbody>
@@ -760,22 +781,22 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                   return (
                     <tr
                       key={key}
-                      className={`cursor-pointer transition-colors ${checked ? 'bg-green-50' : 'hover:bg-gray-50'}`}
+                      className={`cursor-pointer transition-colors ${checked ? 'bg-blue-100' : 'hover:bg-blue-50/50'}`}
                       onClick={() => setCheckedBenefits(prev => {
                         const next = new Set(prev)
                         next.has(key) ? next.delete(key) : next.add(key)
                         return next
                       })}
                     >
-                      <td className="border border-gray-200 px-1 text-center">
-                        <input type="checkbox" readOnly checked={checked} className="accent-green-500 cursor-pointer" />
+                      <td className="border border-blue-200 px-1 text-center">
+                        <input type="checkbox" readOnly checked={checked} className="accent-blue-600 cursor-pointer" />
                       </td>
                       {i === 0 ? (
-                        <td rowSpan={arr.length} className="border border-gray-200 px-2 py-1 font-semibold text-gray-700 align-middle">{agentGroup}</td>
+                        <td rowSpan={arr.length} className="border border-blue-200 px-2 py-1 font-semibold text-gray-700 align-middle">{agentGroup}</td>
                       ) : null}
-                      <td className="border border-gray-200 px-2 py-1 text-gray-700">{b.benefit}</td>
-                      <td className="border border-gray-200 px-2 py-1 text-blue-600 font-medium">{b.discount}</td>
-                      <td className="border border-gray-200 px-2 py-1 text-gray-500">{b.duration}</td>
+                      <td className="border border-blue-200 px-2 py-1 text-gray-700">{b.benefit}</td>
+                      <td className="border border-blue-200 px-2 py-1 text-blue-700 font-medium">{b.discount}</td>
+                      <td className="border border-blue-200 px-2 py-1 text-gray-500">{b.duration}</td>
                     </tr>
                   )
                 })
@@ -784,9 +805,11 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           </table>
         </div>
       </div>
+        </>
+      )}
 
-      {/* Internet, TV, Streaming sections */}
-      {commissionConfig.sections.slice(1).map((section, offset) => {
+      {/* Internet, TV, Streaming sections — show when either toggle is on */}
+      {(showPricing || showCommissions) && commissionConfig.sections.slice(1).map((section, offset) => {
         const si = offset + 1
         return (
           <div key={si}>
@@ -796,12 +819,13 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <thead>
                   <tr className="bg-gray-100">
                     <th className="border border-gray-200 px-3 py-2 text-left font-semibold text-gray-600 whitespace-nowrap min-w-[80px]">Plan</th>
-                    <th className="border border-gray-200 px-3 py-2 font-semibold text-center whitespace-nowrap min-w-[70px] text-gray-500">Price</th>
-                    {commissionConfig.roles.map(role => (
+                    {showPricing && <th className="border border-gray-200 px-3 py-2 font-semibold text-center whitespace-nowrap min-w-[70px] bg-blue-50 text-blue-700">Price</th>}
+                    {showPricing && showCommissions && <th className="bg-gray-300 w-0.5 p-0 border-0" />}
+                    {showCommissions && commissionConfig.roles.map(role => (
                       <th
                         key={role}
                         className={`border border-gray-200 px-3 py-2 font-semibold text-center whitespace-nowrap min-w-[70px] transition-colors ${
-                          role === selectedRole ? 'bg-blue-600 text-white' : 'text-gray-500'
+                          role === selectedRole ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'
                         }`}
                       >{role}</th>
                     ))}
@@ -823,34 +847,37 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                           <span className="font-medium text-gray-700">{row.plan}</span>
                         )}
                       </td>
-                      <td className="border border-gray-200 p-0 text-center">
-                        {isAdmin ? (
-                          <input
-                            className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-50 bg-transparent"
-                            value={row.price ?? ''}
-                            placeholder="—"
-                            onChange={e => setRowPrice(si, ri, e.target.value)}
-                          />
-                        ) : (
-                          <span className="block px-1 py-0.5 text-gray-700">{row.price || '—'}</span>
-                        )}
-                      </td>
-                      {commissionConfig.roles.map(role => (
+                      {showPricing && (
+                        <td className="border border-gray-200 p-0 text-center bg-blue-50/40">
+                          {isAdmin ? (
+                            <input
+                              className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                              value={row.price ?? ''}
+                              placeholder="—"
+                              onChange={e => setRowPrice(si, ri, e.target.value)}
+                            />
+                          ) : (
+                            <span className="block px-1 py-0.5 text-blue-800">{row.price || '—'}</span>
+                          )}
+                        </td>
+                      )}
+                      {showPricing && showCommissions && <td className="bg-gray-200 w-0.5 p-0 border-0" />}
+                      {showCommissions && commissionConfig.roles.map(role => (
                         <td
                           key={role}
-                          className={`border border-gray-200 p-0 text-center transition-colors ${role === selectedRole ? 'bg-blue-50' : ''}`}
+                          className={`border border-gray-200 p-0 text-center transition-colors ${role === selectedRole ? 'bg-green-50' : 'bg-green-50/30'}`}
                         >
                           {isAdmin ? (
                             <input
                               className={`w-full text-xs text-center px-1 py-0.5 focus:outline-none bg-transparent ${
-                                role === selectedRole ? 'focus:bg-blue-100' : 'focus:bg-blue-50'
+                                role === selectedRole ? 'focus:bg-green-100' : 'focus:bg-green-50'
                               }`}
                               value={row.commissions[role] ?? ''}
                               placeholder="—"
                               onChange={e => setCommCell(si, ri, role, e.target.value)}
                             />
                           ) : (
-                            <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-blue-700' : 'text-gray-600'}`}>
+                            <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>
                               {row.commissions[role] || '—'}
                             </span>
                           )}
