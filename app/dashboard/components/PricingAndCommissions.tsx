@@ -8,13 +8,7 @@ const ADMIN_EMAIL = 'thjacob111@gmail.com'
 const PLAN_NAMES = ['Value', 'Extra 2.0', 'Premium 2.0', 'Senior']
 const LINE_COUNTS = [1, 2, 3, 4, 5]
 const FIRSTNET_NOTE = 'Includes FirstNet access — a satellite-backed priority network that gives first responders dedicated cell coverage even during emergencies and network congestion.'
-
-const INTERNET_SECTION_NAMES = new Set([
-  'Fiber', 'Fiber Riders', 'Fiber Discounts',
-  'Coax', 'Coax Riders', 'Coax Discounts',
-  '5G (Air)', '5G Riders', '5G Discounts',
-])
-const TV_SECTION_NAMES = new Set(['Cable / TV', 'Cable Adders', 'Streaming'])
+const CARRIERS = ['AT&T', 'Verizon', 'Frontier', 'Spectrum', 'Ezee'] as const
 
 const INTERNET_GROUPS = [
   { plan: 'Fiber',    riders: 'Fiber Riders',    discounts: 'Fiber Discounts'    },
@@ -49,30 +43,18 @@ const DEFAULT_DISCOUNTS: DiscountRow[] = [
 
 // ── PHONE PLAN DETAILS ────────────────────────────────────
 interface PlanDetails {
-  call_text_cell_tower_priority: string
-  call_text_calling_limit: string
-  call_text_texting_limit: string
-  data_limit: string
-  data_speed: string
-  hotspot_limit: string
-  hotspot_speed: string
-  intl_calling_limit: string
-  intl_coverage_map: string
-  intl_data_roaming_limit: string
-  intl_data_roaming_speed: string
-  ld_places: string
-  ld_calling_limit: string
+  call_text_cell_tower_priority: string; call_text_calling_limit: string; call_text_texting_limit: string
+  data_limit: string; data_speed: string; hotspot_limit: string; hotspot_speed: string
+  intl_calling_limit: string; intl_coverage_map: string; intl_data_roaming_limit: string; intl_data_roaming_speed: string
+  ld_places: string; ld_calling_limit: string
 }
-
 type PlanDetailsMap = { [plan: string]: PlanDetails }
-
 const EMPTY_PLAN_DETAILS: PlanDetails = {
   call_text_cell_tower_priority: '', call_text_calling_limit: '', call_text_texting_limit: '',
   data_limit: '', data_speed: '', hotspot_limit: '', hotspot_speed: '',
   intl_calling_limit: '', intl_coverage_map: '', intl_data_roaming_limit: '', intl_data_roaming_speed: '',
   ld_places: '', ld_calling_limit: '',
 }
-
 const PLAN_DETAIL_SECTIONS: { label: string; fields: { key: keyof PlanDetails; label: string }[] }[] = [
   { label: 'CALL & TEXT', fields: [
     { key: 'call_text_cell_tower_priority', label: 'Cell Tower Priority' },
@@ -80,12 +62,10 @@ const PLAN_DETAIL_SECTIONS: { label: string; fields: { key: keyof PlanDetails; l
     { key: 'call_text_texting_limit', label: 'Texting Limit' },
   ]},
   { label: 'DATA', fields: [
-    { key: 'data_limit', label: 'Data Limit' },
-    { key: 'data_speed', label: 'Data Speed' },
+    { key: 'data_limit', label: 'Data Limit' }, { key: 'data_speed', label: 'Data Speed' },
   ]},
   { label: 'HOTSPOT', fields: [
-    { key: 'hotspot_limit', label: 'Hotspot Limit' },
-    { key: 'hotspot_speed', label: 'Hotspot Speed' },
+    { key: 'hotspot_limit', label: 'Hotspot Limit' }, { key: 'hotspot_speed', label: 'Hotspot Speed' },
   ]},
   { label: 'INTERNATIONAL', fields: [
     { key: 'intl_calling_limit', label: 'International Calling Limit' },
@@ -101,123 +81,135 @@ const PLAN_DETAIL_SECTIONS: { label: string; fields: { key: keyof PlanDetails; l
 
 // ── INTERNET PLAN DETAILS ─────────────────────────────────
 interface InternetPlanDetails {
-  contract_term: string
-  install_fee: string
-  equipment_fee: string
-  speed_range: string
-  data_cap: string
-  backup_power: string
-  network_description: string
-  equipment_description: string
+  contract_term: string; install_fee: string; equipment_fee: string
+  speed_range: string; data_cap: string; backup_power: string
+  network_description: string; equipment_description: string
 }
-
 const EMPTY_INTERNET_DETAILS: InternetPlanDetails = {
   contract_term: '', install_fee: '', equipment_fee: '',
   speed_range: '', data_cap: '', backup_power: '',
   network_description: '', equipment_description: '',
 }
-
 const INTERNET_INLINE_FIELDS: { key: keyof InternetPlanDetails; label: string }[] = [
-  { key: 'contract_term',  label: 'Contract'    },
-  { key: 'install_fee',    label: 'Install Fee'  },
-  { key: 'equipment_fee',  label: 'Equip. Fee'  },
-  { key: 'speed_range',    label: 'Speed'        },
-  { key: 'data_cap',       label: 'Data Cap'     },
-  { key: 'backup_power',   label: 'Backup'       },
+  { key: 'contract_term', label: 'Contract' }, { key: 'install_fee', label: 'Install Fee' },
+  { key: 'equipment_fee', label: 'Equip. Fee' }, { key: 'speed_range', label: 'Speed' },
+  { key: 'data_cap', label: 'Data Cap' }, { key: 'backup_power', label: 'Backup' },
 ]
 
 // ── CABLE PLAN DETAILS ────────────────────────────────────
 interface CablePlanDetails { channels_included: string }
-const EMPTY_CABLE_DETAILS: CablePlanDetails = { channels_included: '' }
+
+// ── ADDER / ACCESSORY DETAIL TYPES ───────────────────────
+interface AdderDetails {
+  description: string; price_per_line: string; eligibility: string; notes: string
+}
+const EMPTY_ADDER_DETAILS: AdderDetails = { description: '', price_per_line: '', eligibility: '', notes: '' }
+const ADDER_INLINE_FIELDS: { key: keyof AdderDetails; label: string }[] = [
+  { key: 'price_per_line', label: 'Price/Line' },
+  { key: 'eligibility', label: 'Eligibility' },
+]
 
 // ── COMMISSION TYPES ──────────────────────────────────────
 interface CommissionRow {
   plan: string
   price?: string
-  standard?: string
-  bundled?: string
+  standard?: string; bundled?: string; promoAmount?: string; promoDuration?: string
   commissions: Record<string, string>
   internetDetails?: Partial<InternetPlanDetails>
   cableDetails?: Partial<CablePlanDetails>
+  adderDetails?: Partial<AdderDetails>
 }
-
 interface CommissionSection {
   name: string
-  type?: 'default' | 'internet' | 'internet-riders' | 'internet-discounts' | 'cable' | 'cable-adders' | 'streaming'
+  type?: 'default' | 'cellular-plans' | 'cellular-adders' | 'cellular-accessory' | 'device-pricing'
+       | 'internet' | 'internet-riders' | 'internet-discounts'
+       | 'cable' | 'cable-adders' | 'streaming'
   sectionDetails?: string
   rows: CommissionRow[]
 }
-
 interface CommissionConfig { roles: string[]; sections: CommissionSection[] }
 
 const DEFAULT_COMMISSION: CommissionConfig = {
   roles: ['Overall', 'Soul Shine', 'Agent', 'Rep'],
   sections: [
-    { name: 'Phone Plans', type: 'default', rows: [
+    // ── CELLULAR ────────────────────────────────────────
+    { name: 'Phone Plans', type: 'cellular-plans', rows: [
       { plan: 'Value', commissions: {} }, { plan: 'Extra 2.0', commissions: {} },
       { plan: 'Premium 2.0', commissions: {} }, { plan: 'Senior', commissions: {} },
     ]},
-    { name: 'Phone Plan Adders', type: 'default', rows: [
+    { name: 'Phone Plan Adders', type: 'cellular-adders', rows: [
       { plan: 'Nextup', commissions: {} }, { plan: 'Insurance', commissions: {} },
     ]},
+    { name: 'Accessories - Shared Number', type: 'cellular-accessory', rows: [
+      { plan: 'Watch', commissions: {} }, { plan: 'Tablet', commissions: {} },
+    ]},
+    { name: 'Accessories - New Number', type: 'cellular-accessory', rows: [
+      { plan: 'Watch', commissions: {} }, { plan: 'Tablet', commissions: {} },
+    ]},
+    { name: 'Device Pricing & Trade-In', type: 'device-pricing', rows: [] },
+    // ── INTERNET ────────────────────────────────────────
     { name: 'Fiber', type: 'internet', sectionDetails: '', rows: [
-      { plan: '100 Mbps', standard: '', bundled: '', commissions: {} },
-      { plan: '300 Mbps', standard: '', bundled: '', commissions: {} },
-      { plan: '500 Mbps', standard: '', bundled: '', commissions: {} },
-      { plan: '1 Gb', standard: '', bundled: '', commissions: {} },
-      { plan: '2 Gb', standard: '', bundled: '', commissions: {} },
-      { plan: '5 Gb', standard: '', bundled: '', commissions: {} },
+      { plan: '100 Mbps', standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: '300 Mbps', standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: '500 Mbps', standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: '1 Gb',     standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: '2 Gb',     standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: '5 Gb',     standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
     ]},
     { name: 'Fiber Riders', type: 'internet-riders', rows: [
-      { plan: 'Extra Router', price: '', commissions: {} },
-      { plan: 'Security Package', price: '', commissions: {} },
-      { plan: 'Backup Service', price: '', commissions: {} },
+      { plan: 'Extra Router',    standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'Security Package',standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'Backup Service',  standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
     ]},
     { name: 'Fiber Discounts', type: 'internet-discounts', rows: [
       { plan: 'Autopay', price: '', commissions: {} },
       { plan: 'Low Income', price: '', commissions: {} },
     ]},
     { name: 'Coax', type: 'internet', sectionDetails: '', rows: [
-      { plan: '100 Mbps', standard: '', bundled: '', commissions: {} },
-      { plan: '300 Mbps', standard: '', bundled: '', commissions: {} },
-      { plan: '500 Mbps', standard: '', bundled: '', commissions: {} },
-      { plan: '1 Gb', standard: '', bundled: '', commissions: {} },
+      { plan: '100 Mbps', standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: '300 Mbps', standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: '500 Mbps', standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: '1 Gb',     standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
     ]},
     { name: 'Coax Riders', type: 'internet-riders', rows: [
-      { plan: 'Extra Router', price: '', commissions: {} },
-      { plan: 'Security Package', price: '', commissions: {} },
-      { plan: 'Backup Service', price: '', commissions: {} },
+      { plan: 'Extra Router',    standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'Security Package',standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'Backup Service',  standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
     ]},
     { name: 'Coax Discounts', type: 'internet-discounts', rows: [
       { plan: 'Autopay', price: '', commissions: {} },
       { plan: 'Low Income', price: '', commissions: {} },
     ]},
     { name: '5G (Air)', type: 'internet', sectionDetails: '', rows: [
-      { plan: '5G Home Internet', standard: '', bundled: '', commissions: {} },
+      { plan: '5G Home Internet', standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
     ]},
     { name: '5G Riders', type: 'internet-riders', rows: [
-      { plan: 'Extra Router', price: '', commissions: {} },
+      { plan: 'Extra Router', standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
     ]},
     { name: '5G Discounts', type: 'internet-discounts', rows: [
       { plan: 'Autopay', price: '', commissions: {} },
       { plan: 'Low Income', price: '', commissions: {} },
     ]},
+    // ── TV ──────────────────────────────────────────────
     { name: 'Cable / TV', type: 'cable', sectionDetails: '', rows: [
-      { plan: 'SELECT Package', price: '', commissions: {}, cableDetails: { channels_included: '' } },
-      { plan: 'CHOICE Package', price: '', commissions: {}, cableDetails: { channels_included: '' } },
-      { plan: 'PREMIER Package', price: '', commissions: {}, cableDetails: { channels_included: '' } },
+      { plan: 'SELECT Package',  standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {}, cableDetails: { channels_included: '' } },
+      { plan: 'CHOICE Package',  standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {}, cableDetails: { channels_included: '' } },
+      { plan: 'PREMIER Package', standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {}, cableDetails: { channels_included: '' } },
     ]},
     { name: 'Cable Adders', type: 'cable-adders', rows: [
-      { plan: 'Sports Pack', price: '', commissions: {} },
-      { plan: 'HBO Max', price: '', commissions: {} },
-      { plan: 'Showtime', price: '', commissions: {} },
-      { plan: 'Starz', price: '', commissions: {} },
+      { plan: 'Sports Pack', standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'HBO Max',     standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'Showtime',    standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'Starz',       standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
     ]},
     { name: 'Streaming', type: 'streaming', rows: [
-      { plan: 'YouTube TV', price: '', commissions: {} }, { plan: 'Netflix', price: '', commissions: {} },
-      { plan: 'Hulu', price: '', commissions: {} }, { plan: 'Prime', price: '', commissions: {} },
-      { plan: 'HBO Max', price: '', commissions: {} }, { plan: 'Paramount', price: '', commissions: {} },
-      { plan: 'Disney+', price: '', commissions: {} },
+      { plan: 'YouTube TV', standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'Netflix',    standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'Hulu',       standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'Prime',      standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'HBO Max',    standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'Paramount',  standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
+      { plan: 'Disney+',    standard: '', bundled: '', promoAmount: '', promoDuration: '', commissions: {} },
     ]},
   ],
 }
@@ -234,10 +226,10 @@ function migrateCommissionConfig(saved: CommissionConfig): CommissionConfig {
   }
 }
 
-// ── PHONE PLAN DETAIL VIEW ────────────────────────────────
+// ── DETAIL VIEW COMPONENTS ────────────────────────────────
 function PhonePlanDetailView({ plan, details, isAdmin, onBack, onChange }: {
-  plan: string; details: PlanDetails; isAdmin: boolean
-  onBack: () => void; onChange: (field: keyof PlanDetails, value: string) => void
+  plan: string; details: PlanDetails; isAdmin: boolean; onBack: () => void
+  onChange: (field: keyof PlanDetails, value: string) => void
 }) {
   return (
     <div className="space-y-5">
@@ -252,12 +244,10 @@ function PhonePlanDetailView({ plan, details, isAdmin, onBack, onChange }: {
             {section.fields.map(field => (
               <div key={field.key} className="flex items-center px-3 py-2 gap-3">
                 <span className="text-xs text-gray-500 w-52 shrink-0">{field.label}</span>
-                {isAdmin ? (
-                  <input className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
-                    value={details[field.key]} placeholder="—" onChange={e => onChange(field.key, e.target.value)} />
-                ) : (
-                  <span className="text-xs text-gray-700 flex-1">{details[field.key] || '—'}</span>
-                )}
+                {isAdmin
+                  ? <input className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                      value={details[field.key]} placeholder="—" onChange={e => onChange(field.key, e.target.value)} />
+                  : <span className="text-xs text-gray-700 flex-1">{details[field.key] || '—'}</span>}
               </div>
             ))}
           </div>
@@ -267,18 +257,14 @@ function PhonePlanDetailView({ plan, details, isAdmin, onBack, onChange }: {
   )
 }
 
-// ── INTERNET PLAN DETAIL VIEW ─────────────────────────────
 function InternetPlanDetailView({ plan, details, isAdmin, onBack, onUpdate }: {
-  plan: string; details: Partial<InternetPlanDetails>; isAdmin: boolean
-  onBack: () => void; onUpdate: (field: keyof InternetPlanDetails, value: string) => void
+  plan: string; details: Partial<InternetPlanDetails>; isAdmin: boolean; onBack: () => void
+  onUpdate: (field: keyof InternetPlanDetails, value: string) => void
 }) {
   const basicFields: { key: keyof InternetPlanDetails; label: string }[] = [
-    { key: 'contract_term', label: 'Contract Term' },
-    { key: 'install_fee', label: 'Install / Activation Fee' },
-    { key: 'equipment_fee', label: 'Equipment Fee' },
-    { key: 'speed_range', label: 'Speed Range' },
-    { key: 'data_cap', label: 'Data Cap' },
-    { key: 'backup_power', label: 'Backup Power' },
+    { key: 'contract_term', label: 'Contract Term' }, { key: 'install_fee', label: 'Install / Activation Fee' },
+    { key: 'equipment_fee', label: 'Equipment Fee' }, { key: 'speed_range', label: 'Speed Range' },
+    { key: 'data_cap', label: 'Data Cap' }, { key: 'backup_power', label: 'Backup Power' },
   ]
   return (
     <div className="space-y-5">
@@ -286,50 +272,32 @@ function InternetPlanDetailView({ plan, details, isAdmin, onBack, onUpdate }: {
         <button onClick={onBack} className="text-gray-400 hover:text-gray-600 text-lg">←</button>
         <h2 className="font-bold text-gray-800 text-base">{plan} — Plan Details</h2>
       </div>
-      <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Plan Info</p>
-        <div className="rounded-lg border border-gray-200 divide-y divide-gray-100">
-          {basicFields.map(f => (
-            <div key={f.key} className="flex items-center px-3 py-2 gap-3">
-              <span className="text-xs text-gray-500 w-44 shrink-0">{f.label}</span>
-              {isAdmin ? (
-                <input className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+      <div className="rounded-lg border border-gray-200 divide-y divide-gray-100">
+        {basicFields.map(f => (
+          <div key={f.key} className="flex items-center px-3 py-2 gap-3">
+            <span className="text-xs text-gray-500 w-44 shrink-0">{f.label}</span>
+            {isAdmin
+              ? <input className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
                   value={details[f.key] ?? ''} placeholder="—" onChange={e => onUpdate(f.key, e.target.value)} />
-              ) : (
-                <span className="text-xs text-gray-700 flex-1">{details[f.key] || '—'}</span>
-              )}
-            </div>
-          ))}
+              : <span className="text-xs text-gray-700 flex-1">{details[f.key] || '—'}</span>}
+          </div>
+        ))}
+      </div>
+      {(['network_description', 'equipment_description'] as const).map(k => (
+        <div key={k}>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{k === 'network_description' ? 'Network Technology' : 'Equipment'}</p>
+          {isAdmin
+            ? <textarea className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400 resize-none"
+                rows={4} value={details[k] ?? ''} placeholder="..." onChange={e => onUpdate(k, e.target.value)} />
+            : <p className="text-sm text-gray-700 whitespace-pre-wrap">{details[k] || '—'}</p>}
         </div>
-      </div>
-      <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Network Technology</p>
-        {isAdmin ? (
-          <textarea className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400 resize-none"
-            rows={4} value={details.network_description ?? ''} placeholder="Describe the network technology..."
-            onChange={e => onUpdate('network_description', e.target.value)} />
-        ) : (
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{details.network_description || '—'}</p>
-        )}
-      </div>
-      <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Equipment</p>
-        {isAdmin ? (
-          <textarea className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400 resize-none"
-            rows={4} value={details.equipment_description ?? ''} placeholder="Describe the provided equipment..."
-            onChange={e => onUpdate('equipment_description', e.target.value)} />
-        ) : (
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{details.equipment_description || '—'}</p>
-        )}
-      </div>
+      ))}
     </div>
   )
 }
 
-// ── CABLE PLAN DETAIL VIEW ────────────────────────────────
 function CablePlanDetailView({ plan, details, isAdmin, onBack, onUpdate }: {
-  plan: string; details: Partial<CablePlanDetails>; isAdmin: boolean
-  onBack: () => void; onUpdate: (value: string) => void
+  plan: string; details: Partial<CablePlanDetails>; isAdmin: boolean; onBack: () => void; onUpdate: (v: string) => void
 }) {
   return (
     <div className="space-y-5">
@@ -337,24 +305,51 @@ function CablePlanDetailView({ plan, details, isAdmin, onBack, onUpdate }: {
         <button onClick={onBack} className="text-gray-400 hover:text-gray-600 text-lg">←</button>
         <h2 className="font-bold text-gray-800 text-base">{plan} — Channels</h2>
       </div>
-      <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Channels Included</p>
-        {isAdmin ? (
-          <textarea className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400 resize-none"
-            rows={10} value={details.channels_included ?? ''} placeholder="List the channels included in this package..."
-            onChange={e => onUpdate(e.target.value)} />
-        ) : (
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{details.channels_included || '—'}</p>
-        )}
-      </div>
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Channels Included</p>
+      {isAdmin
+        ? <textarea className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400 resize-none"
+            rows={10} value={details.channels_included ?? ''} placeholder="List channels..." onChange={e => onUpdate(e.target.value)} />
+        : <p className="text-sm text-gray-700 whitespace-pre-wrap">{details.channels_included || '—'}</p>}
     </div>
   )
 }
 
-// ── SECTION DETAIL VIEW ───────────────────────────────────
+function AdderPlanDetailView({ plan, details, isAdmin, onBack, onUpdate }: {
+  plan: string; details: Partial<AdderDetails>; isAdmin: boolean; onBack: () => void
+  onUpdate: (field: keyof AdderDetails, value: string) => void
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center gap-2">
+        <button onClick={onBack} className="text-gray-400 hover:text-gray-600 text-lg">←</button>
+        <h2 className="font-bold text-gray-800 text-base">{plan} — Details</h2>
+      </div>
+      <div className="rounded-lg border border-gray-200 divide-y divide-gray-100">
+        {([{ key: 'price_per_line', label: 'Monthly Price / Line' }, { key: 'eligibility', label: 'Eligibility Requirements' }] as const).map(f => (
+          <div key={f.key} className="flex items-center px-3 py-2 gap-3">
+            <span className="text-xs text-gray-500 w-44 shrink-0">{f.label}</span>
+            {isAdmin
+              ? <input className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                  value={details[f.key] ?? ''} placeholder="—" onChange={e => onUpdate(f.key, e.target.value)} />
+              : <span className="text-xs text-gray-700 flex-1">{details[f.key] || '—'}</span>}
+          </div>
+        ))}
+      </div>
+      {([{ key: 'description' as keyof AdderDetails, label: 'Description' }, { key: 'notes' as keyof AdderDetails, label: 'Notes' }]).map(f => (
+        <div key={f.key}>
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{f.label}</p>
+          {isAdmin
+            ? <textarea className="w-full text-xs border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400 resize-none"
+                rows={3} value={details[f.key] ?? ''} placeholder="..." onChange={e => onUpdate(f.key, e.target.value)} />
+            : <p className="text-sm text-gray-700 whitespace-pre-wrap">{details[f.key] || '—'}</p>}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function SectionDetailView({ sectionName, description, isAdmin, onBack, onUpdate }: {
-  sectionName: string; description: string; isAdmin: boolean
-  onBack: () => void; onUpdate: (value: string) => void
+  sectionName: string; description: string; isAdmin: boolean; onBack: () => void; onUpdate: (v: string) => void
 }) {
   return (
     <div className="space-y-5">
@@ -362,32 +357,61 @@ function SectionDetailView({ sectionName, description, isAdmin, onBack, onUpdate
         <button onClick={onBack} className="text-gray-400 hover:text-gray-600 text-lg">←</button>
         <h2 className="font-bold text-gray-800 text-base">{sectionName} — Overview</h2>
       </div>
-      <div>
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Description</p>
-        {isAdmin ? (
-          <textarea className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400 resize-none"
-            rows={8} value={description} placeholder={`Enter overview and key information about ${sectionName}...`}
-            onChange={e => onUpdate(e.target.value)} />
-        ) : (
-          <p className="text-sm text-gray-700 whitespace-pre-wrap">{description || 'No overview available.'}</p>
-        )}
-      </div>
+      {isAdmin
+        ? <textarea className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-blue-400 resize-none"
+            rows={8} value={description} placeholder={`Overview for ${sectionName}...`} onChange={e => onUpdate(e.target.value)} />
+        : <p className="text-sm text-gray-700 whitespace-pre-wrap">{description || 'No overview available.'}</p>}
     </div>
   )
 }
 
-// ── DETAIL PAGE STATE TYPE ────────────────────────────────
 type ActiveDetail =
   | null
   | { kind: 'phone-plan'; plan: string }
+  | { kind: 'adder-plan'; si: number; ri: number }
   | { kind: 'internet-plan'; si: number; ri: number }
   | { kind: 'cable-plan'; si: number; ri: number }
   | { kind: 'section'; si: number }
 
+// ── CARRIER DROPDOWN ──────────────────────────────────────
+function CarrierDropdown({ selected, onChange }: { selected: Set<string>; onChange: (s: Set<string>) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    function handle(e: MouseEvent) { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false) }
+    document.addEventListener('mousedown', handle)
+    return () => document.removeEventListener('mousedown', handle)
+  }, [])
+  const label = selected.size === 0 ? 'Carrier'
+    : selected.size === CARRIERS.length ? 'All Carriers'
+    : [...selected].join(', ')
+  return (
+    <div ref={ref} className="relative">
+      <button onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-1.5 text-xs font-semibold border border-gray-300 rounded-lg px-3 py-1.5 bg-white hover:bg-gray-50 focus:outline-none whitespace-nowrap max-w-[160px]">
+        <span className="truncate">{label}</span>
+        <span className="text-gray-400 shrink-0">{open ? '▲' : '▼'}</span>
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-50 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[140px]">
+          {CARRIERS.map(c => (
+            <label key={c} className="flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 cursor-pointer">
+              <input type="checkbox" checked={selected.has(c)} className="accent-blue-600"
+                onChange={() => { const n = new Set(selected); n.has(c) ? n.delete(c) : n.add(c); onChange(n) }} />
+              <span className="text-xs text-gray-700">{c}</span>
+            </label>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── MAIN COMPONENT ────────────────────────────────────────
 export default function PricingAndCommissions({ onBack }: { onBack: () => void }) {
   const [isAdmin, setIsAdmin] = useState(false)
-  // Pricing state
+  const [selectedCarriers, setSelectedCarriers] = useState<Set<string>>(new Set(['AT&T']))
+  const [selectedRole, setSelectedRole] = useState('')
   const [grid, setGrid] = useState<PricingGrid>({})
   const [discounts, setDiscounts] = useState<DiscountRow[]>(DEFAULT_DISCOUNTS)
   const [companyDiscounts, setCompanyDiscounts] = useState<CompanyDiscount[]>([])
@@ -399,18 +423,11 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   const [planDetails, setPlanDetails] = useState<PlanDetailsMap>({})
   const [detailsExpanded, setDetailsExpanded] = useState(false)
   const [expandedDiscount, setExpandedDiscount] = useState<number | null>(null)
-  // Commission state
   const [commissionConfig, setCommissionConfig] = useState<CommissionConfig>(DEFAULT_COMMISSION)
-  const [selectedRole, setSelectedRole] = useState('')
-  const [newRole, setNewRole] = useState('')
-  // Expandable section detail columns (per section name)
   const [expandedSectionDetails, setExpandedSectionDetails] = useState<Set<string>>(new Set())
-  // Detail pages
   const [activeDetail, setActiveDetail] = useState<ActiveDetail>(null)
-  // View toggles
   const [showPricing, setShowPricing] = useState(true)
   const [showCommissions, setShowCommissions] = useState(true)
-  // Common
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
@@ -429,9 +446,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
         setCompanyDiscounts(data.company_discounts || [])
         setAgentDiscounts(data.agent_discounts || [])
         setPlanDetails(data.plan_details || {})
-        const cfg = data.commission_config
-          ? migrateCommissionConfig(data.commission_config)
-          : DEFAULT_COMMISSION
+        const cfg = data.commission_config ? migrateCommissionConfig(data.commission_config) : DEFAULT_COMMISSION
         setCommissionConfig(cfg)
         setSelectedRole(cfg.roles[0] ?? '')
       }
@@ -480,7 +495,11 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     return () => window.removeEventListener('soul-shine:save', handler)
   }, [])
 
-  // ── PRICING HELPERS ───────────────────────────────────────
+  // ── SECTION LOOKUPS ───────────────────────────────────────
+  function sec(name: string) { return commissionConfig.sections.find(s => s.name === name) }
+  function si(name: string) { return commissionConfig.sections.findIndex(s => s.name === name) }
+
+  // ── DATA HELPERS ──────────────────────────────────────────
   function setPricingCell(plan: string, line: number, value: string) {
     setGrid(prev => ({ ...prev, [plan]: { ...(prev[plan] || {}), [line]: value } }))
   }
@@ -507,297 +526,318 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   function setPlanDetail(plan: string, field: keyof PlanDetails, value: string) {
     setPlanDetails(prev => ({ ...prev, [plan]: { ...(prev[plan] || EMPTY_PLAN_DETAILS), [field]: value } }))
   }
-
-  // ── COMMISSION HELPERS ────────────────────────────────────
   function setPhoneCommCell(plan: string, role: string, value: string) {
+    const phoneIdx = si('Phone Plans')
     setCommissionConfig(prev => ({
       ...prev,
-      sections: prev.sections.map((s, si) => si !== 0 ? s : {
+      sections: prev.sections.map((s, idx) => idx !== phoneIdx ? s : {
         ...s, rows: s.rows.map(r => r.plan === plan ? { ...r, commissions: { ...r.commissions, [role]: value } } : r),
       }),
     }))
   }
-  function setRowField(si: number, ri: number, field: 'price' | 'standard' | 'bundled', value: string) {
+  function setRowField(sIdx: number, ri: number, field: keyof CommissionRow, value: string) {
     setCommissionConfig(prev => ({
       ...prev,
-      sections: prev.sections.map((s, idx) => idx !== si ? s : {
+      sections: prev.sections.map((s, idx) => idx !== sIdx ? s : {
         ...s, rows: s.rows.map((r, ridx) => ridx !== ri ? r : { ...r, [field]: value }),
       }),
     }))
   }
-  function setCommCell(si: number, ri: number, role: string, value: string) {
+  function setCommCell(sIdx: number, ri: number, role: string, value: string) {
     setCommissionConfig(prev => ({
       ...prev,
-      sections: prev.sections.map((s, idx) => idx !== si ? s : {
+      sections: prev.sections.map((s, idx) => idx !== sIdx ? s : {
         ...s, rows: s.rows.map((r, ridx) => ridx !== ri ? r : { ...r, commissions: { ...r.commissions, [role]: value } }),
       }),
     }))
   }
-  function setRowPlanName(si: number, ri: number, value: string) {
+  function setRowPlanName(sIdx: number, ri: number, value: string) {
     setCommissionConfig(prev => ({
       ...prev,
-      sections: prev.sections.map((s, idx) => idx !== si ? s : {
+      sections: prev.sections.map((s, idx) => idx !== sIdx ? s : {
         ...s, rows: s.rows.map((r, ridx) => ridx !== ri ? r : { ...r, plan: value }),
       }),
     }))
   }
-  function addPlanRow(si: number) {
+  function addPlanRow(sIdx: number) {
     setCommissionConfig(prev => ({
       ...prev,
-      sections: prev.sections.map((s, idx) => idx !== si ? s : { ...s, rows: [...s.rows, { plan: '', commissions: {} }] }),
+      sections: prev.sections.map((s, idx) => idx !== sIdx ? s : { ...s, rows: [...s.rows, { plan: '', commissions: {} }] }),
     }))
   }
-  function removePlanRow(si: number, ri: number) {
+  function removePlanRow(sIdx: number, ri: number) {
     setCommissionConfig(prev => ({
       ...prev,
-      sections: prev.sections.map((s, idx) => idx !== si ? s : { ...s, rows: s.rows.filter((_, ridx) => ridx !== ri) }),
+      sections: prev.sections.map((s, idx) => idx !== sIdx ? s : { ...s, rows: s.rows.filter((_, ridx) => ridx !== ri) }),
     }))
   }
   function addRole() {
-    const role = newRole.trim()
-    if (!role || commissionConfig.roles.includes(role)) return
-    setCommissionConfig(prev => ({ ...prev, roles: [...prev.roles, role] }))
-    setNewRole('')
+    const r = window.prompt('New role name:')?.trim()
+    if (!r || commissionConfig.roles.includes(r)) return
+    setCommissionConfig(prev => ({ ...prev, roles: [...prev.roles, r] }))
   }
-  function removeRole(role: string) {
+  function updateInternetPlanDetail(sIdx: number, ri: number, field: keyof InternetPlanDetails, value: string) {
     setCommissionConfig(prev => ({
       ...prev,
-      roles: prev.roles.filter(r => r !== role),
-      sections: prev.sections.map(s => ({
-        ...s, rows: s.rows.map(r => {
-          const { [role]: _removed, ...rest } = r.commissions
-          return { ...r, commissions: rest }
-        }),
-      })),
-    }))
-    if (selectedRole === role) setSelectedRole(commissionConfig.roles.find(r => r !== role) ?? '')
-  }
-  function updateInternetPlanDetail(si: number, ri: number, field: keyof InternetPlanDetails, value: string) {
-    setCommissionConfig(prev => ({
-      ...prev,
-      sections: prev.sections.map((s, idx) => idx !== si ? s : {
+      sections: prev.sections.map((s, idx) => idx !== sIdx ? s : {
         ...s, rows: s.rows.map((r, ridx) => ridx !== ri ? r : {
           ...r, internetDetails: { ...EMPTY_INTERNET_DETAILS, ...r.internetDetails, [field]: value },
         }),
       }),
     }))
   }
-  function updateCablePlanDetail(si: number, ri: number, value: string) {
+  function updateCablePlanDetail(sIdx: number, ri: number, value: string) {
     setCommissionConfig(prev => ({
       ...prev,
-      sections: prev.sections.map((s, idx) => idx !== si ? s : {
+      sections: prev.sections.map((s, idx) => idx !== sIdx ? s : {
         ...s, rows: s.rows.map((r, ridx) => ridx !== ri ? r : { ...r, cableDetails: { channels_included: value } }),
       }),
     }))
   }
-  function updateSectionDetails(si: number, value: string) {
+  function updateAdderPlanDetail(sIdx: number, ri: number, field: keyof AdderDetails, value: string) {
     setCommissionConfig(prev => ({
       ...prev,
-      sections: prev.sections.map((s, idx) => idx !== si ? s : { ...s, sectionDetails: value }),
+      sections: prev.sections.map((s, idx) => idx !== sIdx ? s : {
+        ...s, rows: s.rows.map((r, ridx) => ridx !== ri ? r : {
+          ...r, adderDetails: { ...EMPTY_ADDER_DETAILS, ...r.adderDetails, [field]: value },
+        }),
+      }),
     }))
   }
+  function updateSectionDetails(sIdx: number, value: string) {
+    setCommissionConfig(prev => ({
+      ...prev,
+      sections: prev.sections.map((s, idx) => idx !== sIdx ? s : { ...s, sectionDetails: value }),
+    }))
+  }
+  function toggleExp(name: string) {
+    setExpandedSectionDetails(prev => { const n = new Set(prev); n.has(name) ? n.delete(name) : n.add(name); return n })
+  }
 
-  // ── DETAIL PAGE ROUTING ───────────────────────────────────
+  // ── DETAIL ROUTING ────────────────────────────────────────
   if (loading) return <div className="text-sm text-gray-400 p-4">Loading...</div>
 
   if (activeDetail?.kind === 'phone-plan') return (
-    <PhonePlanDetailView
-      plan={activeDetail.plan}
-      details={planDetails[activeDetail.plan] || EMPTY_PLAN_DETAILS}
-      isAdmin={isAdmin}
-      onBack={() => setActiveDetail(null)}
-      onChange={(field, value) => setPlanDetail(activeDetail.plan, field, value)}
-    />
+    <PhonePlanDetailView plan={activeDetail.plan} details={planDetails[activeDetail.plan] || EMPTY_PLAN_DETAILS}
+      isAdmin={isAdmin} onBack={() => setActiveDetail(null)}
+      onChange={(field, value) => setPlanDetail(activeDetail.plan, field, value)} />
   )
-
   if (activeDetail?.kind === 'internet-plan') {
-    const { si, ri } = activeDetail
-    const row = commissionConfig.sections[si]?.rows[ri]
-    return (
-      <InternetPlanDetailView
-        plan={row?.plan ?? ''}
-        details={row?.internetDetails ?? {}}
-        isAdmin={isAdmin}
-        onBack={() => setActiveDetail(null)}
-        onUpdate={(field, value) => updateInternetPlanDetail(si, ri, field, value)}
-      />
-    )
+    const { si: sIdx, ri } = activeDetail
+    const row = commissionConfig.sections[sIdx]?.rows[ri]
+    return <InternetPlanDetailView plan={row?.plan ?? ''} details={row?.internetDetails ?? {}} isAdmin={isAdmin}
+      onBack={() => setActiveDetail(null)} onUpdate={(f, v) => updateInternetPlanDetail(sIdx, ri, f, v)} />
   }
-
+  if (activeDetail?.kind === 'adder-plan') {
+    const { si: sIdx, ri } = activeDetail
+    const row = commissionConfig.sections[sIdx]?.rows[ri]
+    return <AdderPlanDetailView plan={row?.plan ?? ''} details={row?.adderDetails ?? {}} isAdmin={isAdmin}
+      onBack={() => setActiveDetail(null)} onUpdate={(f, v) => updateAdderPlanDetail(sIdx, ri, f, v)} />
+  }
   if (activeDetail?.kind === 'cable-plan') {
-    const { si, ri } = activeDetail
-    const row = commissionConfig.sections[si]?.rows[ri]
-    return (
-      <CablePlanDetailView
-        plan={row?.plan ?? ''}
-        details={row?.cableDetails ?? {}}
-        isAdmin={isAdmin}
-        onBack={() => setActiveDetail(null)}
-        onUpdate={value => updateCablePlanDetail(si, ri, value)}
-      />
-    )
+    const { si: sIdx, ri } = activeDetail
+    const row = commissionConfig.sections[sIdx]?.rows[ri]
+    return <CablePlanDetailView plan={row?.plan ?? ''} details={row?.cableDetails ?? {}} isAdmin={isAdmin}
+      onBack={() => setActiveDetail(null)} onUpdate={v => updateCablePlanDetail(sIdx, ri, v)} />
   }
-
   if (activeDetail?.kind === 'section') {
-    const { si } = activeDetail
-    const section = commissionConfig.sections[si]
-    return (
-      <SectionDetailView
-        sectionName={section?.name ?? ''}
-        description={section?.sectionDetails ?? ''}
-        isAdmin={isAdmin}
-        onBack={() => setActiveDetail(null)}
-        onUpdate={value => updateSectionDetails(si, value)}
-      />
-    )
+    const { si: sIdx } = activeDetail
+    const section = commissionConfig.sections[sIdx]
+    return <SectionDetailView sectionName={section?.name ?? ''} description={section?.sectionDetails ?? ''}
+      isAdmin={isAdmin} onBack={() => setActiveDetail(null)} onUpdate={v => updateSectionDetails(sIdx, v)} />
   }
 
-  const phoneSection = commissionConfig.sections[0]
-  const rs = detailsExpanded ? 2 : 1
-
-  // ── RENDER HELPERS ────────────────────────────────────────
-
-  function toggleSectionDetails(name: string) {
-    setExpandedSectionDetails(prev => {
-      const next = new Set(prev)
-      next.has(name) ? next.delete(name) : next.add(name)
-      return next
-    })
-  }
-
-  function commCols(si: number, ri: number, row: CommissionRow) {
-    return commissionConfig.roles.map(role => (
-      <td key={role} className={`border border-gray-300 p-0 text-center transition-colors ${role === selectedRole ? 'bg-green-50' : 'bg-green-50/30'}`}>
-        {isAdmin ? (
-          <input
-            className={`w-full text-xs text-center px-1 py-0.5 focus:outline-none bg-transparent ${role === selectedRole ? 'focus:bg-green-100' : 'focus:bg-green-50'}`}
-            value={row.commissions[role] ?? ''} placeholder="—"
-            onChange={e => setCommCell(si, ri, role, e.target.value)}
-          />
-        ) : (
-          <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>
-            {row.commissions[role] || '—'}
-          </span>
-        )}
-      </td>
-    ))
-  }
-
+  // ── RENDER PRIMITIVES ─────────────────────────────────────
   function commHeaderCols() {
     return commissionConfig.roles.map(role => (
-      <th key={role} className={`border border-gray-300 px-1 py-1 font-semibold text-center whitespace-nowrap w-16 transition-colors ${role === selectedRole ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'}`}>
+      <th key={role} className={`border border-gray-200 px-1 py-1.5 font-semibold text-center whitespace-nowrap w-14 ${role === selectedRole ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'}`}>
         {role}
       </th>
     ))
   }
+  function commCols(sIdx: number, ri: number, row: CommissionRow) {
+    return commissionConfig.roles.map(role => (
+      <td key={role} className={`border border-gray-200 p-0 text-center ${role === selectedRole ? 'bg-green-50' : 'bg-green-50/30'}`}>
+        {isAdmin
+          ? <input className={`w-full text-xs text-center px-1 py-0.5 focus:outline-none bg-transparent ${role === selectedRole ? 'focus:bg-green-100' : 'focus:bg-green-50'}`}
+              value={row.commissions[role] ?? ''} placeholder="—" onChange={e => setCommCell(sIdx, ri, role, e.target.value)} />
+          : <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>{row.commissions[role] || '—'}</span>}
+      </td>
+    ))
+  }
 
-  // Renders a generic section (adders, streaming, internet riders, internet discounts)
-  function renderGenericSection(section: CommissionSection, si: number) {
-    const isDiscounts = section.type === 'internet-discounts'
+  // Standard/Bundled/Promo header cells (Promo combines amount + duration)
+  function priceHeaders() {
+    if (!showPricing) return null
     return (
-      <div key={si}>
-        <div className="flex items-center gap-2 mb-2">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{section.name}</p>
-        </div>
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <table className="text-xs w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-20">
-                  {isDiscounts ? 'Discount' : 'Plan'}
-                </th>
-                {showPricing && <th className="border border-gray-200 px-3 py-2 font-semibold text-center whitespace-nowrap min-w-[70px] bg-blue-50 text-blue-700">
-                  {isDiscounts ? 'Amount' : 'Price'}
-                </th>}
-                {showPricing && showCommissions && !isDiscounts && <th className="bg-gray-300 w-0.5 p-0 border-0" />}
-                {showCommissions && !isDiscounts && commHeaderCols()}
-                {isAdmin && !isDiscounts && <th className="border border-gray-200 w-7" />}
-              </tr>
-            </thead>
-            <tbody>
-              {section.rows.map((row, ri) => (
-                <tr key={ri} className="bg-white hover:bg-gray-50">
-                  <td className="border border-gray-200 px-1 py-0.5 text-center">
-                    {isAdmin && !isDiscounts ? (
-                      <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-50 bg-transparent"
-                        value={row.plan} placeholder="Plan name..." onChange={e => setRowPlanName(si, ri, e.target.value)} />
-                    ) : (
-                      <span className="font-medium text-gray-700">{row.plan}</span>
-                    )}
-                  </td>
-                  {showPricing && (
-                    <td className="border border-gray-200 p-0 text-center bg-blue-50/40">
-                      {isAdmin ? (
-                        <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
-                          value={row.price ?? ''} placeholder="—" onChange={e => setRowField(si, ri, 'price', e.target.value)} />
-                      ) : (
-                        <span className="block px-1 py-0.5 text-blue-800">{row.price || '—'}</span>
-                      )}
-                    </td>
-                  )}
-                  {showPricing && showCommissions && !isDiscounts && <td className="bg-gray-200 w-0.5 p-0 border-0" />}
-                  {showCommissions && !isDiscounts && commCols(si, ri, row)}
-                  {isAdmin && !isDiscounts && (
-                    <td className="border border-gray-200 px-1 text-center">
-                      <button onClick={() => removePlanRow(si, ri)} className="text-gray-300 hover:text-red-400">✕</button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {isAdmin && !isDiscounts && (
-          <button onClick={() => addPlanRow(si)} className="mt-1 w-full text-xs text-blue-600 py-1.5 hover:bg-blue-50 rounded border border-dashed border-blue-200 text-center">
-            + Add Plan
-          </button>
-        )}
+      <>
+        <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-14">Standard</th>
+        <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-14">Bundled</th>
+        <th className="border border-gray-200 px-1 py-1 font-semibold text-center bg-blue-50 text-blue-700 w-20 text-[10px]">Promo</th>
+      </>
+    )
+  }
+  function priceCells(sIdx: number, ri: number, row: CommissionRow) {
+    if (!showPricing) return null
+    const promoDisplay = row.promoAmount && row.promoDuration
+      ? `${row.promoAmount} / ${row.promoDuration}`
+      : (row.promoAmount || row.promoDuration || '—')
+    return (
+      <>
+        {(['standard', 'bundled'] as const).map(f => (
+          <td key={f} className="border border-gray-200 p-0 text-center bg-blue-50/40 w-14">
+            {isAdmin
+              ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                  value={(row[f] as string) ?? ''} placeholder="—" onChange={e => setRowField(sIdx, ri, f, e.target.value)} />
+              : <span className="block px-1 py-0.5 text-blue-800">{(row[f] as string) || '—'}</span>}
+          </td>
+        ))}
+        <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-20">
+          {isAdmin
+            ? <div className="flex flex-col gap-px py-0.5 px-1">
+                <input className="w-full text-xs text-center focus:outline-none focus:bg-blue-100 bg-transparent"
+                  value={row.promoAmount ?? ''} placeholder="$" onChange={e => setRowField(sIdx, ri, 'promoAmount', e.target.value)} />
+                <input className="w-full text-[10px] text-center text-gray-400 focus:outline-none focus:bg-blue-50 bg-transparent"
+                  value={row.promoDuration ?? ''} placeholder="duration" onChange={e => setRowField(sIdx, ri, 'promoDuration', e.target.value)} />
+              </div>
+            : <span className="block px-1 py-0.5 text-blue-800 text-[10px]">{promoDisplay}</span>}
+        </td>
+      </>
+    )
+  }
+
+  function sep() {
+    if (!showPricing || !showCommissions) return null
+    return <td className="bg-gray-200 w-0.5 p-0 border-0" />
+  }
+  function sepTh() {
+    if (!showPricing || !showCommissions) return null
+    return <th className="bg-gray-300 w-0.5 p-0 border-0" />
+  }
+
+  function subLabel(label: string) {
+    return (
+      <div className="border-t border-gray-200 bg-gray-50 px-3 py-1">
+        <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">{label}</span>
       </div>
     )
   }
 
-  // Renders one internet type (Fiber/Coax/5G) as a single connected block with plans, riders, discounts
-  function renderInternetGroupBlock(group: { plan: string; riders: string; discounts: string }) {
-    const planSec = commissionConfig.sections.find(s => s.name === group.plan)
-    const planIdx = commissionConfig.sections.findIndex(s => s.name === group.plan)
-    const ridersSec = commissionConfig.sections.find(s => s.name === group.riders)
-    const ridersIdx = commissionConfig.sections.findIndex(s => s.name === group.riders)
-    const discSec = commissionConfig.sections.find(s => s.name === group.discounts)
-    const discIdx = commissionConfig.sections.findIndex(s => s.name === group.discounts)
+  function addRowBtn(sIdx: number, label = '+ Add Plan') {
+    if (!isAdmin) return null
+    return <button onClick={() => addPlanRow(sIdx)} className="w-full text-xs text-blue-500 py-1 hover:bg-blue-50 border-t border-dashed border-blue-100 text-center">{label}</button>
+  }
+
+  // Generic pricing+commission table (for adders, accessories, streaming, riders, cable)
+  function genericTable(section: CommissionSection, sIdx: number, opts: {
+    nameEditable?: boolean; isCable?: boolean; showDetails?: boolean
+    skipPricing?: boolean; isAdder?: boolean
+  } = {}) {
+    const detailExp = expandedSectionDetails.has(section.name)
+    const showPrice = !opts.skipPricing && showPricing
+    const showSep = showCommissions && (showPrice || showPricing)
+
+    return (
+      <div className="overflow-x-auto">
+        <table className="text-xs w-full border-collapse">
+          <thead>
+            <tr className="bg-white">
+              <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-20">Plan</th>
+              {showPrice && priceHeaders()}
+              {showPricing && opts.showDetails && (
+                <th className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
+                  onClick={() => toggleExp(section.name)}>Details {detailExp ? '▼' : '▶'}</th>
+              )}
+              {showPricing && opts.showDetails && detailExp && opts.isCable && (
+                <th className="border border-gray-200 px-1 py-1 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 min-w-[80px]">Channels</th>
+              )}
+              {showPricing && opts.showDetails && detailExp && opts.isAdder && ADDER_INLINE_FIELDS.map(f => (
+                <th key={f.key} className="border border-gray-200 px-1 py-1 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 w-20">{f.label}</th>
+              ))}
+              {showSep ? <th className="bg-gray-300 w-0.5 p-0 border-0" /> : null}
+              {showCommissions && commHeaderCols()}
+              {isAdmin && <th className="border border-gray-200 w-6" />}
+            </tr>
+          </thead>
+          <tbody>
+            {section.rows.map((row, ri) => (
+              <tr key={ri} className="bg-white hover:bg-gray-50">
+                <td className={`border border-gray-200 px-1 py-0.5 whitespace-nowrap w-20 ${
+                  opts.isCable ? 'font-medium text-purple-600 hover:text-purple-800 cursor-pointer'
+                  : opts.isAdder ? 'font-medium text-gray-700 hover:text-blue-600 cursor-pointer'
+                  : 'text-gray-700'
+                }`}
+                  onClick={
+                    opts.isCable ? () => setActiveDetail({ kind: 'cable-plan', si: sIdx, ri })
+                    : opts.isAdder ? () => setActiveDetail({ kind: 'adder-plan', si: sIdx, ri })
+                    : undefined
+                  }>
+                  {opts.nameEditable && isAdmin && !opts.isAdder
+                    ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none bg-transparent" value={row.plan} placeholder="Plan…"
+                        onChange={e => setRowPlanName(sIdx, ri, e.target.value)} />
+                    : row.plan}
+                </td>
+                {showPrice && priceCells(sIdx, ri, row)}
+                {showPricing && opts.showDetails && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20 w-14">—</td>}
+                {showPrice && opts.showDetails && detailExp && opts.isCable && (
+                  <td className="border border-gray-200 p-0 text-center bg-blue-50/30 min-w-[80px]">
+                    {isAdmin
+                      ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                          value={row.cableDetails?.channels_included ?? ''} placeholder="e.g. 150+"
+                          onChange={e => updateCablePlanDetail(sIdx, ri, e.target.value)} />
+                      : <span className="block px-1 py-0.5 text-blue-800 truncate">{row.cableDetails?.channels_included || '—'}</span>}
+                  </td>
+                )}
+                {showPricing && opts.showDetails && detailExp && opts.isAdder && ADDER_INLINE_FIELDS.map(f => (
+                  <td key={f.key} className="border border-gray-200 p-0 text-center bg-blue-50/30 w-20">
+                    {isAdmin
+                      ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                          value={row.adderDetails?.[f.key] ?? ''} placeholder="—"
+                          onChange={e => updateAdderPlanDetail(sIdx, ri, f.key, e.target.value)} />
+                      : <span className="block px-1 py-0.5 text-blue-800">{row.adderDetails?.[f.key] || '—'}</span>}
+                  </td>
+                ))}
+                {showSep ? <td className="bg-gray-200 w-0.5 p-0 border-0" /> : null}
+                {showCommissions && commCols(sIdx, ri, row)}
+                {isAdmin && <td className="border border-gray-200 px-1 text-center">
+                  <button onClick={() => removePlanRow(sIdx, ri)} className="text-gray-300 hover:text-red-400">✕</button>
+                </td>}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    )
+  }
+
+  // Internet group block (plan + riders + discounts, all touching)
+  function renderInternetGroup(group: typeof INTERNET_GROUPS[number]) {
+    const planSec = sec(group.plan); const planIdx = si(group.plan)
+    const ridersSec = sec(group.riders); const ridersIdx = si(group.riders)
+    const discSec = sec(group.discounts); const discIdx = si(group.discounts)
     if (!planSec) return null
-    const detailExpanded = expandedSectionDetails.has(group.plan)
+    const detailExp = expandedSectionDetails.has(group.plan)
 
     return (
       <div key={group.plan}>
-        {/* Section header with overview link */}
         <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5 flex items-center gap-2">
           <button onClick={() => setActiveDetail({ kind: 'section', si: planIdx })}
-            className="text-xs font-semibold text-blue-600 hover:text-blue-800 uppercase tracking-wide">
-            {group.plan}
-          </button>
-          {planSec.sectionDetails && (
-            <span className="text-[10px] text-gray-400 italic truncate">{planSec.sectionDetails.slice(0, 50)}{planSec.sectionDetails.length > 50 ? '…' : ''}</span>
-          )}
+            className="text-xs font-semibold text-blue-600 hover:text-blue-800 uppercase tracking-wide">{group.plan}</button>
         </div>
-
-        {/* Plans table */}
         <div className="overflow-x-auto">
           <table className="text-xs w-full border-collapse">
             <thead>
               <tr className="bg-white">
                 <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-20">Plan</th>
-                {showPricing && <>
-                  <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center whitespace-nowrap w-16 bg-blue-50 text-blue-700">Standard</th>
-                  <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center whitespace-nowrap w-16 bg-blue-50 text-blue-700">Bundled</th>
+                {priceHeaders()}
+                {showPricing && (
                   <th className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
-                    onClick={() => toggleSectionDetails(group.plan)}>
-                    Details {detailExpanded ? '▼' : '▶'}
-                  </th>
-                  {detailExpanded && INTERNET_INLINE_FIELDS.map(f => (
-                    <th key={f.key} className="border border-gray-200 px-1 py-1 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 whitespace-nowrap w-14">{f.label}</th>
-                  ))}
-                </>}
-                {showPricing && showCommissions && <th className="bg-gray-300 w-0.5 p-0 border-0" />}
+                    onClick={() => toggleExp(group.plan)}>Details {detailExp ? '▼' : '▶'}</th>
+                )}
+                {showPricing && detailExp && INTERNET_INLINE_FIELDS.map(f => (
+                  <th key={f.key} className="border border-gray-200 px-1 py-1 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 w-14">{f.label}</th>
+                ))}
+                {sepTh()}
                 {showCommissions && commHeaderCols()}
                 {isAdmin && <th className="border border-gray-200 w-6" />}
               </tr>
@@ -807,28 +847,18 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <tr key={ri} className="bg-white hover:bg-gray-50">
                   <td className="border border-gray-200 px-1 py-0.5 font-medium text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap w-20"
                     onClick={() => setActiveDetail({ kind: 'internet-plan', si: planIdx, ri })}>{row.plan}</td>
-                  {showPricing && <>
-                    <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-16">
-                      {isAdmin ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
-                        value={row.standard ?? ''} placeholder="—" onChange={e => setRowField(planIdx, ri, 'standard', e.target.value)} />
-                      : <span className="block px-1 py-0.5 text-blue-800">{row.standard || '—'}</span>}
-                    </td>
-                    <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-16">
-                      {isAdmin ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
-                        value={row.bundled ?? ''} placeholder="—" onChange={e => setRowField(planIdx, ri, 'bundled', e.target.value)} />
-                      : <span className="block px-1 py-0.5 text-blue-800">{row.bundled || '—'}</span>}
-                    </td>
-                    <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20 w-14">—</td>
-                    {detailExpanded && INTERNET_INLINE_FIELDS.map(f => (
-                      <td key={f.key} className="border border-gray-200 p-0 text-center bg-blue-50/30 w-14">
-                        {isAdmin ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
-                          value={row.internetDetails?.[f.key] ?? ''} placeholder="—"
-                          onChange={e => updateInternetPlanDetail(planIdx, ri, f.key, e.target.value)} />
+                  {priceCells(planIdx, ri, row)}
+                  {showPricing && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20 w-14">—</td>}
+                  {showPricing && detailExp && INTERNET_INLINE_FIELDS.map(f => (
+                    <td key={f.key} className="border border-gray-200 p-0 text-center bg-blue-50/30 w-14">
+                      {isAdmin
+                        ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                            value={row.internetDetails?.[f.key] ?? ''} placeholder="—"
+                            onChange={e => updateInternetPlanDetail(planIdx, ri, f.key, e.target.value)} />
                         : <span className="block px-1 py-0.5 text-blue-800">{row.internetDetails?.[f.key] || '—'}</span>}
-                      </td>
-                    ))}
-                  </>}
-                  {showPricing && showCommissions && <td className="bg-gray-200 w-0.5 p-0 border-0" />}
+                    </td>
+                  ))}
+                  {sep()}
                   {showCommissions && commCols(planIdx, ri, row)}
                   {isAdmin && <td className="border border-gray-200 px-1 text-center">
                     <button onClick={() => removePlanRow(planIdx, ri)} className="text-gray-300 hover:text-red-400">✕</button>
@@ -838,36 +868,25 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
             </tbody>
           </table>
         </div>
-        {isAdmin && (
-          <button onClick={() => addPlanRow(planIdx)} className="w-full text-xs text-blue-500 py-1 hover:bg-blue-50 border-t border-dashed border-blue-100 text-center">+ Add Plan</button>
-        )}
+        {addRowBtn(planIdx)}
 
-        {/* Riders sub-section — touches plans above */}
         {ridersSec && (showPricing || showCommissions) && (
           <>
-            <div className="border-t border-gray-200 bg-gray-50 px-3 py-1">
-              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Riders</span>
-            </div>
+            {subLabel('Riders')}
             <div className="overflow-x-auto">
               <table className="text-xs w-full border-collapse">
                 <tbody>
                   {ridersSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
-                      <td className="border border-gray-200 px-1 py-0.5 font-medium text-gray-600 whitespace-nowrap w-20">
-                        {isAdmin ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none bg-transparent"
-                          value={row.plan} placeholder="Rider name…" onChange={e => setRowPlanName(ridersIdx, ri, e.target.value)} />
-                        : row.plan}
+                      <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap w-20">
+                        {isAdmin
+                          ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none bg-transparent" value={row.plan} placeholder="Rider…"
+                              onChange={e => setRowPlanName(ridersIdx, ri, e.target.value)} />
+                          : row.plan}
                       </td>
-                      {showPricing && <>
-                        <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-16">
-                          {isAdmin ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
-                            value={row.price ?? ''} placeholder="—" onChange={e => setRowField(ridersIdx, ri, 'price', e.target.value)} />
-                          : <span className="block px-1 py-0.5 text-blue-800">{row.price || '—'}</span>}
-                        </td>
-                        <td className="border border-gray-200 w-16 bg-blue-50/10" />
-                        <td className="border border-gray-200 w-14 bg-blue-50/10" />
-                      </>}
-                      {showPricing && showCommissions && <td className="bg-gray-200 w-0.5 p-0 border-0" />}
+                      {priceCells(ridersIdx, ri, row)}
+                      {showPricing && <td className="border border-gray-200 w-14 bg-blue-50/10" />}
+                      {sep()}
                       {showCommissions && commCols(ridersIdx, ri, row)}
                       {isAdmin && <td className="border border-gray-200 px-1 text-center">
                         <button onClick={() => removePlanRow(ridersIdx, ri)} className="text-gray-300 hover:text-red-400">✕</button>
@@ -877,28 +896,24 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 </tbody>
               </table>
             </div>
-            {isAdmin && (
-              <button onClick={() => addPlanRow(ridersIdx)} className="w-full text-xs text-blue-500 py-1 hover:bg-blue-50 border-t border-dashed border-blue-100 text-center">+ Add Rider</button>
-            )}
+            {addRowBtn(ridersIdx, '+ Add Rider')}
           </>
         )}
 
-        {/* Discounts sub-section — touches riders above */}
         {discSec && showPricing && (
           <>
-            <div className="border-t border-gray-200 bg-gray-50 px-3 py-1">
-              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Discounts</span>
-            </div>
+            {subLabel('Discounts')}
             <div className="overflow-x-auto">
               <table className="text-xs w-full border-collapse">
                 <tbody>
                   {discSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
-                      <td className="border border-gray-200 px-1 py-0.5 font-medium text-gray-600 whitespace-nowrap w-20">{row.plan}</td>
-                      <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-16">
-                        {isAdmin ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
-                          value={row.price ?? ''} placeholder="—" onChange={e => setRowField(discIdx, ri, 'price', e.target.value)} />
-                        : <span className="block px-1 py-0.5 text-blue-800">{row.price || '—'}</span>}
+                      <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap w-20">{row.plan}</td>
+                      <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-14">
+                        {isAdmin
+                          ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                              value={row.price ?? ''} placeholder="—" onChange={e => setRowField(discIdx, ri, 'price', e.target.value)} />
+                          : <span className="block px-1 py-0.5 text-blue-800">{row.price || '—'}</span>}
                       </td>
                     </tr>
                   ))}
@@ -911,395 +926,353 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     )
   }
 
-  // Renders the cable section with 3 plans + expandable channels column
-  function renderCableSection(section: CommissionSection, si: number) {
-    const detailExpanded = expandedSectionDetails.has(section.name)
-    const isCableAdders = section.type === 'cable-adders'
-    return (
-      <div key={si}>
-        <div className="flex items-center gap-2 mb-2">
-          {!isCableAdders ? (
-            <button
-              onClick={() => setActiveDetail({ kind: 'section', si })}
-              className="text-xs font-semibold text-purple-600 hover:text-purple-800 uppercase tracking-wide underline-offset-2 hover:underline"
-            >{section.name}</button>
-          ) : (
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{section.name}</p>
-          )}
-        </div>
-        <div className="overflow-x-auto rounded-lg border border-gray-200">
-          <table className="text-xs w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-20">Plan</th>
-                {showPricing && <>
-                  <th className="border border-gray-200 px-2 py-2 font-semibold text-center whitespace-nowrap min-w-[70px] bg-blue-50 text-blue-700">Price</th>
-                  {!isCableAdders && (
-                    <th
-                      className="border border-gray-200 px-2 py-2 font-semibold text-blue-700 text-center whitespace-nowrap w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
-                      onClick={() => toggleSectionDetails(section.name)}
-                    >Details {detailExpanded ? '▼' : '▶'}</th>
-                  )}
-                  {!isCableAdders && detailExpanded && (
-                    <th className="border border-gray-200 px-1 py-1 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 whitespace-nowrap min-w-[100px]">Channels</th>
-                  )}
-                </>}
-                {showPricing && showCommissions && <th className="bg-gray-300 w-0.5 p-0 border-0" />}
-                {showCommissions && commHeaderCols()}
-                {isAdmin && <th className="border border-gray-200 w-7" />}
-              </tr>
-            </thead>
-            <tbody>
-              {section.rows.map((row, ri) => (
-                <tr key={ri} className="bg-white hover:bg-gray-50">
-                  <td className={`border border-gray-200 px-1 py-0.5 whitespace-nowrap text-center ${!isCableAdders ? 'font-medium text-purple-600 hover:text-purple-800 cursor-pointer' : 'font-medium text-gray-700'}`}
-                    onClick={!isCableAdders ? () => setActiveDetail({ kind: 'cable-plan', si, ri }) : undefined}>{row.plan}</td>
-                  {showPricing && <>
-                    <td className="border border-gray-200 p-0 text-center bg-blue-50/40">
-                      {isAdmin ? (
-                        <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
-                          value={row.price ?? ''} placeholder="—" onChange={e => setRowField(si, ri, 'price', e.target.value)} />
-                      ) : <span className="block px-1 py-0.5 text-blue-800">{row.price || '—'}</span>}
-                    </td>
-                    {!isCableAdders && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20">—</td>}
-                    {!isCableAdders && detailExpanded && (
-                      <td className="border border-gray-200 p-0 text-center bg-blue-50/30">
-                        {isAdmin ? (
-                          <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent min-w-[100px]"
-                            value={row.cableDetails?.channels_included ?? ''} placeholder="e.g. 150+ channels"
-                            onChange={e => updateCablePlanDetail(si, ri, e.target.value)} />
-                        ) : <span className="block px-1 py-0.5 text-blue-800 min-w-[100px] truncate">{row.cableDetails?.channels_included || '—'}</span>}
-                      </td>
-                    )}
-                  </>}
-                  {showPricing && showCommissions && <td className="bg-gray-200 w-0.5 p-0 border-0" />}
-                  {showCommissions && commCols(si, ri, row)}
-                  {isAdmin && (
-                    <td className="border border-gray-200 px-1 text-center">
-                      <button onClick={() => removePlanRow(si, ri)} className="text-gray-300 hover:text-red-400">✕</button>
-                    </td>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {isAdmin && (
-          <button onClick={() => addPlanRow(si)} className="mt-1 w-full text-xs text-blue-600 py-1.5 hover:bg-blue-50 rounded border border-dashed border-blue-200 text-center">
-            + Add Plan
-          </button>
-        )}
-      </div>
-    )
-  }
-
-  const internetSections = commissionConfig.sections
-    .map((s, i) => ({ s, i }))
-    .filter(({ s }) => INTERNET_SECTION_NAMES.has(s.name))
-
-  const tvSections = commissionConfig.sections
-    .map((s, i) => ({ s, i }))
-    .filter(({ s }) => TV_SECTION_NAMES.has(s.name))
+  const phoneSec = sec('Phone Plans'); const phoneIdx = si('Phone Plans')
+  const adderSec = sec('Phone Plan Adders'); const adderIdx = si('Phone Plan Adders')
+  const sharedAccSec = sec('Accessories - Shared Number'); const sharedAccIdx = si('Accessories - Shared Number')
+  const newAccSec = sec('Accessories - New Number'); const newAccIdx = si('Accessories - New Number')
+  const rsPhone = detailsExpanded ? 2 : 1
 
   // ── MAIN RENDER ───────────────────────────────────────────
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
 
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <button onClick={onBack} className="text-gray-400 hover:text-gray-600 text-lg">←</button>
-        <h2 className="font-bold text-gray-800 text-base">Pricing & Commissions</h2>
-        <span className="ml-auto text-xs">
-          {saving ? <span className="text-gray-400">Saving…</span>
-            : saveError ? <span className="text-red-500" title={saveError}>⚠ Save failed</span>
-            : saved ? <span className="text-green-600">✓ Saved</span>
-            : !isAdmin ? <span className="text-gray-400">View only</span>
-            : null}
-        </span>
-      </div>
-
-      {/* View toggles */}
-      <div className="flex items-center gap-5 bg-gray-50 rounded-lg px-4 py-2.5 border border-gray-200">
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input type="checkbox" checked={showPricing} onChange={e => setShowPricing(e.target.checked)} className="w-4 h-4 accent-blue-600 cursor-pointer" />
-          <span className="text-sm font-semibold text-blue-700">Pricing</span>
-        </label>
-        <label className="flex items-center gap-2 cursor-pointer select-none">
-          <input type="checkbox" checked={showCommissions} onChange={e => setShowCommissions(e.target.checked)} className="w-4 h-4 accent-green-600 cursor-pointer" />
-          <span className="text-sm font-semibold text-green-700">Commissions</span>
-        </label>
-      </div>
-
-      {/* Role selector */}
-      {showCommissions && (
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide shrink-0">Your Role</label>
+      {/* HEADER */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <button onClick={onBack} className="text-gray-400 hover:text-gray-600 text-lg shrink-0">←</button>
+        <h2 className="font-bold text-gray-800 text-base shrink-0">Pricing & Commissions</h2>
+        <CarrierDropdown selected={selectedCarriers} onChange={setSelectedCarriers} />
+        {showCommissions && (
           <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)}
-            className="flex-1 text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:border-green-400">
+            className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-green-400">
             {commissionConfig.roles.map(r => <option key={r} value={r}>{r}</option>)}
           </select>
+        )}
+        {isAdmin && showCommissions && (
+          <button onClick={addRole} className="text-xs text-green-600 border border-green-200 rounded px-2 py-1 hover:bg-green-50">+ Role</button>
+        )}
+        <div className="ml-auto flex items-center gap-3">
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" checked={showPricing} onChange={e => setShowPricing(e.target.checked)} className="accent-blue-600" />
+            <span className="text-xs font-semibold text-blue-700">Pricing</span>
+          </label>
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" checked={showCommissions} onChange={e => setShowCommissions(e.target.checked)} className="accent-green-600" />
+            <span className="text-xs font-semibold text-green-700">Commissions</span>
+          </label>
+          <span className="text-xs">
+            {saving ? <span className="text-gray-400">Saving…</span>
+              : saveError ? <span className="text-red-500">⚠ Error</span>
+              : saved ? <span className="text-green-600">✓ Saved</span> : null}
+          </span>
+        </div>
+      </div>
+
+      {[...selectedCarriers].filter(c => c !== 'AT&T').length > 0 && (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-2 text-xs text-gray-500">
+          {[...selectedCarriers].filter(c => c !== 'AT&T').join(', ')} — pricing data coming soon.
         </div>
       )}
 
-      {/* Admin: manage roles */}
-      {isAdmin && showCommissions && (
-        <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Roles</p>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {commissionConfig.roles.map(r => (
-              <span key={r} className="flex items-center gap-1 text-xs bg-green-50 border border-green-200 text-green-700 rounded-full px-2.5 py-1">
-                {r}
-                <button onClick={() => removeRole(r)} className="text-green-300 hover:text-red-400 ml-1 leading-none">✕</button>
-              </span>
-            ))}
-          </div>
-          <div className="flex gap-2">
-            <input className="flex-1 text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-green-400"
-              placeholder="Add role..." value={newRole} onChange={e => setNewRole(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addRole()} />
-            <button onClick={addRole} className="text-xs bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Add</button>
-          </div>
-        </div>
-      )}
-
-      {/* ── PHONE PLANS ── */}
-      {(showPricing || showCommissions) && (
-        <div>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Monthly Plan Pricing & Commissions</p>
-          <div className="overflow-x-auto">
-            <table className="text-xs w-full min-w-max border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th rowSpan={rs} className="border border-gray-300 px-1 py-1 text-left font-semibold text-gray-600 whitespace-nowrap w-24">Plan</th>
-                  {showPricing && LINE_COUNTS.map(n => (
-                    <th rowSpan={rs} key={n} className="border border-gray-300 px-1 py-1 font-semibold text-blue-700 text-center whitespace-nowrap w-11 bg-blue-50">L{n}</th>
-                  ))}
-                  {showPricing && (
-                    <th rowSpan={rs} className="border border-gray-300 px-1 py-1 font-semibold text-blue-700 text-center whitespace-nowrap w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
-                      onClick={() => setDetailsExpanded(x => !x)}>
-                      Details {detailsExpanded ? '▼' : '▶'}
-                    </th>
-                  )}
-                  {showPricing && detailsExpanded && PLAN_DETAIL_SECTIONS.map(s => (
-                    <th key={s.label} colSpan={s.fields.length} className="border border-gray-300 px-1 py-0.5 text-[10px] font-semibold text-blue-600 uppercase tracking-wide text-center bg-blue-50/50 whitespace-nowrap">
-                      {s.label}
-                    </th>
-                  ))}
-                  {showPricing && showCommissions && <th rowSpan={rs} className="bg-gray-300 w-0.5 p-0 border-0" />}
-                  {showCommissions && commissionConfig.roles.map(role => (
-                    <th rowSpan={rs} key={role} className={`border border-gray-300 px-1 py-1 font-semibold text-center whitespace-nowrap w-16 transition-colors ${role === selectedRole ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'}`}>
-                      {role}
-                    </th>
-                  ))}
-                </tr>
-                {showPricing && detailsExpanded && (
-                  <tr className="bg-blue-50/30">
-                    {PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
-                      <th key={f.key} className="border border-gray-300 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center whitespace-nowrap max-w-[72px]">
-                        {f.label}
-                      </th>
-                    ))}
-                  </tr>
-                )}
-              </thead>
-              <tbody>
-                {PLAN_NAMES.map(plan => {
-                  const commRow = phoneSection?.rows.find(r => r.plan === plan)
-                  return (
-                    <tr key={plan} className="bg-white hover:bg-gray-50/80">
-                      <td className="border border-gray-300 px-1 py-0.5 font-medium text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap"
-                        onClick={() => setActiveDetail({ kind: 'phone-plan', plan })}>{plan}</td>
-                      {showPricing && LINE_COUNTS.map(n => (
-                        <td key={n} className="border border-gray-300 p-0 text-center bg-blue-50/40">
-                          {isAdmin ? (
-                            <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
-                              value={grid[plan]?.[n] ?? ''} placeholder="—" onChange={e => setPricingCell(plan, n, e.target.value)} />
-                          ) : <span className="block px-1 py-0.5 text-blue-800">{grid[plan]?.[n] || '—'}</span>}
-                        </td>
-                      ))}
-                      {showPricing && <td className="border border-gray-300 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20">—</td>}
-                      {showPricing && detailsExpanded && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
-                        <td key={f.key} className="border border-gray-300 p-0 text-center bg-blue-50/30">
-                          {isAdmin ? (
-                            <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent min-w-[60px]"
-                              value={planDetails[plan]?.[f.key] ?? ''} placeholder="—" onChange={e => setPlanDetail(plan, f.key, e.target.value)} />
-                          ) : <span className="block px-1 py-0.5 text-blue-800 min-w-[60px]">{planDetails[plan]?.[f.key] || '—'}</span>}
-                        </td>
-                      ))}
-                      {showPricing && showCommissions && <td className="bg-gray-200 w-0.5 p-0 border-0" />}
-                      {showCommissions && commissionConfig.roles.map(role => (
-                        <td key={role} className={`border border-gray-300 p-0 text-center transition-colors ${role === selectedRole ? 'bg-green-50' : 'bg-green-50/30'}`}>
-                          {isAdmin ? (
-                            <input className={`w-full text-xs text-center px-1 py-0.5 focus:outline-none bg-transparent ${role === selectedRole ? 'focus:bg-green-100' : 'focus:bg-green-50'}`}
-                              value={commRow?.commissions[role] ?? ''} placeholder="—" onChange={e => setPhoneCommCell(plan, role, e.target.value)} />
-                          ) : (
-                            <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>
-                              {commRow?.commissions[role] || '—'}
-                            </span>
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Phone Plan Adders */}
-      {(showPricing || showCommissions) && (() => {
-        const adderSec = commissionConfig.sections.find(s => s.name === 'Phone Plan Adders')
-        const adderIdx = commissionConfig.sections.findIndex(s => s.name === 'Phone Plan Adders')
-        if (!adderSec) return null
-        return renderGenericSection(adderSec, adderIdx)
-      })()}
-
-      {/* ── INTERNET GROUP ── */}
-      {(showPricing || showCommissions) && internetSections.length > 0 && (
-        <div className="rounded-xl border-2 border-blue-200 overflow-hidden">
-          <div className="bg-blue-600 px-4 py-2">
-            <span className="text-white font-bold text-sm tracking-wide">INTERNET</span>
-          </div>
-          <div className="p-3">
-            <div className="rounded-lg border border-gray-200 overflow-hidden divide-y-2 divide-gray-200">
-              {INTERNET_GROUPS.map(group => renderInternetGroupBlock(group))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── TV GROUP ── */}
-      {(showPricing || showCommissions) && tvSections.length > 0 && (
-        <div className="rounded-xl border-2 border-purple-200 overflow-hidden">
-          <div className="bg-purple-600 px-4 py-2">
-            <span className="text-white font-bold text-sm tracking-wide">TV</span>
-          </div>
-          <div className="p-3 space-y-4">
-            {tvSections.map(({ s, i }) => {
-              if (s.type === 'cable' || s.type === 'cable-adders') return renderCableSection(s, i)
-              return renderGenericSection(s, i)
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── PRICING-ONLY SECTIONS ── */}
-      {showPricing && (
+      {(showPricing || showCommissions) && selectedCarriers.has('AT&T') && (
         <>
-          <div>
-            <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">Occupational Discounts</p>
-            <div className="rounded-lg border border-blue-100 divide-y divide-blue-50">
-              {discounts.map((d, i) => {
-                const isExpanded = expandedDiscount === i
-                const toggle = () => setExpandedDiscount(isExpanded ? null : i)
-                if (d.label === 'Company (FAN)') return (
-                  <div key={i} className="bg-blue-50/20">
-                    <div className="flex items-center px-3 py-2 gap-3 cursor-pointer hover:bg-blue-50/50" onClick={toggle}>
-                      <span className="text-xs text-gray-600 shrink-0">Company (FAN)</span>
-                      <div className="flex items-center gap-2 ml-auto" onClick={e => e.stopPropagation()}>
-                        <input className="w-28 text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
-                          value={companySearch} placeholder="Search company..."
-                          onChange={e => {
-                            const val = e.target.value; setCompanySearch(val)
-                            const match = companyDiscounts.find(c => c.company.toLowerCase() === val.toLowerCase())
-                            setDiscount(i, match?.discount ?? '')
-                          }}
-                          onClick={() => setShowCompanyDb(true)} />
-                        {d.value && <span className="text-xs font-semibold text-white bg-blue-600 rounded px-2 py-0.5 shrink-0">{d.value}</span>}
-                      </div>
-                      <span className="text-gray-300 text-[10px]">{isExpanded ? '▲' : '▼'}</span>
-                    </div>
-                    {isExpanded && (
-                      <div className="px-3 pb-2 pt-1 bg-blue-50/30 border-t border-blue-100">
-                        {isAdmin ? <textarea className="w-full text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none"
-                          rows={2} value={d.notes ?? ''} placeholder="Special features or notes..." onChange={e => setDiscountNotes(i, e.target.value)} />
-                          : d.notes ? <p className="text-xs text-gray-500 italic">{d.notes}</p> : null}
-                      </div>
-                    )}
-                  </div>
-                )
-                return (
-                  <div key={i} className="bg-blue-50/20">
-                    <div className="flex items-center justify-between px-3 py-2 gap-3 cursor-pointer hover:bg-blue-50/50" onClick={toggle}>
-                      <span className="text-xs text-gray-600">{d.label}</span>
-                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                        {isAdmin ? (
-                          <input className="w-28 text-xs text-right border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
-                            value={d.value} placeholder="e.g. 25% off" onChange={e => setDiscount(i, e.target.value)} />
-                        ) : d.value ? (
-                          <span className="text-xs font-semibold text-white bg-blue-600 rounded px-2 py-0.5">{d.value}</span>
-                        ) : <span className="text-xs text-gray-300">—</span>}
-                        <span className="text-gray-300 text-[10px]">{isExpanded ? '▲' : '▼'}</span>
-                      </div>
-                    </div>
-                    {isExpanded && (
-                      <div className="px-3 pb-2 pt-1 bg-blue-50/30 border-t border-blue-100">
-                        {isAdmin ? <textarea className="w-full text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none"
-                          rows={2} value={d.notes ?? ''} placeholder="Special features or notes..." onChange={e => setDiscountNotes(i, e.target.value)} />
-                          : d.notes ? <p className="text-xs text-gray-500 italic">{d.notes}</p> : null}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+          {/* ── CELLULAR ── */}
+          <div className="rounded-xl border-2 border-blue-200 overflow-hidden">
+            <div className="bg-blue-600 px-4 py-2">
+              <span className="text-white font-bold text-sm tracking-wide">CELLULAR</span>
             </div>
-          </div>
+            <div className="p-3 space-y-3">
 
-          <div>
-            <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">Agent Applied Discounts</p>
-            <div className="rounded-lg border border-blue-100 divide-y divide-blue-50 bg-blue-50/20">
-              {agentDiscounts.map((d, i) => (
-                <div key={i} className="flex items-center gap-2 px-3 py-2">
-                  <input className="flex-1 min-w-0 text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
-                    value={d.label} placeholder="Discount name..." onChange={e => setAgentDiscount(i, 'label', e.target.value)} />
-                  <input className="w-24 text-xs text-right border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
-                    value={d.value} placeholder="Amount..." onChange={e => setAgentDiscount(i, 'value', e.target.value)} />
-                  <button onClick={() => setAgentDiscounts(prev => prev.filter((_, j) => j !== i))} className="text-gray-300 hover:text-red-400 text-xs shrink-0">✕</button>
-                </div>
-              ))}
-              <button onClick={() => setAgentDiscounts(prev => [...prev, { label: '', value: '' }])}
-                className="w-full text-xs text-blue-600 py-2 hover:bg-blue-50 text-center">+ Add Discount</button>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-2">Retail Agent Benefits</p>
-            <div className="overflow-x-auto rounded-lg border border-blue-100">
-              <table className="text-xs w-full border-collapse">
-                <thead>
-                  <tr className="bg-blue-50">
-                    <th className="border border-blue-200 w-6 px-1"></th>
-                    <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Agent</th>
-                    <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Benefit</th>
-                    <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Discount</th>
-                    <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {['Best Buy', 'Costco'].map(agentGroup =>
-                    RETAIL_AGENT_BENEFITS.filter(b => b.agent === agentGroup).map((b, i, arr) => {
-                      const key = `${b.agent}|${b.benefit}`
-                      const checked = checkedBenefits.has(key)
-                      return (
-                        <tr key={key} className={`cursor-pointer transition-colors ${checked ? 'bg-blue-100' : 'hover:bg-blue-50/50'}`}
-                          onClick={() => setCheckedBenefits(prev => { const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next })}>
-                          <td className="border border-blue-200 px-1 text-center">
-                            <input type="checkbox" readOnly checked={checked} className="accent-blue-600 cursor-pointer" />
-                          </td>
-                          {i === 0 ? <td rowSpan={arr.length} className="border border-blue-200 px-2 py-1 font-semibold text-gray-700 align-middle">{agentGroup}</td> : null}
-                          <td className="border border-blue-200 px-2 py-1 text-gray-700">{b.benefit}</td>
-                          <td className="border border-blue-200 px-2 py-1 text-blue-700 font-medium">{b.discount}</td>
-                          <td className="border border-blue-200 px-2 py-1 text-gray-500">{b.duration}</td>
+              {/* Phone Plans */}
+              {phoneSec && (
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone Plans</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="text-xs w-full min-w-max border-collapse">
+                      <thead>
+                        <tr className="bg-white">
+                          <th rowSpan={rsPhone} className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-24">Plan</th>
+                          {showPricing && LINE_COUNTS.map(n => (
+                            <th rowSpan={rsPhone} key={n} className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center whitespace-nowrap w-11 bg-blue-50">L{n}</th>
+                          ))}
+                          {showPricing && (
+                            <th rowSpan={rsPhone} className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
+                              onClick={() => setDetailsExpanded(x => !x)}>Details {detailsExpanded ? '▼' : '▶'}</th>
+                          )}
+                          {showPricing && detailsExpanded && PLAN_DETAIL_SECTIONS.map(s => (
+                            <th key={s.label} colSpan={s.fields.length} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 uppercase tracking-wide text-center bg-blue-50/50 whitespace-nowrap">{s.label}</th>
+                          ))}
+                          {sepTh() && <th rowSpan={rsPhone} className="bg-gray-300 w-0.5 p-0 border-0" />}
+                          {showCommissions && commissionConfig.roles.map(role => (
+                            <th rowSpan={rsPhone} key={role} className={`border border-gray-200 px-1 py-1.5 font-semibold text-center whitespace-nowrap w-14 ${role === selectedRole ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'}`}>{role}</th>
+                          ))}
                         </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
+                        {showPricing && detailsExpanded && (
+                          <tr className="bg-blue-50/30">
+                            {PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
+                              <th key={f.key} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center whitespace-nowrap max-w-[60px]">{f.label}</th>
+                            ))}
+                          </tr>
+                        )}
+                      </thead>
+                      <tbody>
+                        {PLAN_NAMES.map(plan => {
+                          const commRow = phoneSec?.rows.find(r => r.plan === plan)
+                          return (
+                            <tr key={plan} className="bg-white hover:bg-gray-50">
+                              <td className="border border-gray-200 px-1 py-0.5 font-medium text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap"
+                                onClick={() => setActiveDetail({ kind: 'phone-plan', plan })}>{plan}</td>
+                              {showPricing && LINE_COUNTS.map(n => (
+                                <td key={n} className="border border-gray-200 p-0 text-center bg-blue-50/40">
+                                  {isAdmin
+                                    ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                                        value={grid[plan]?.[n] ?? ''} placeholder="—" onChange={e => setPricingCell(plan, n, e.target.value)} />
+                                    : <span className="block px-1 py-0.5 text-blue-800">{grid[plan]?.[n] || '—'}</span>}
+                                </td>
+                              ))}
+                              {showPricing && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20">—</td>}
+                              {showPricing && detailsExpanded && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
+                                <td key={f.key} className="border border-gray-200 p-0 text-center bg-blue-50/30">
+                                  {isAdmin
+                                    ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent min-w-[55px]"
+                                        value={planDetails[plan]?.[f.key] ?? ''} placeholder="—" onChange={e => setPlanDetail(plan, f.key, e.target.value)} />
+                                    : <span className="block px-1 py-0.5 text-blue-800 min-w-[55px]">{planDetails[plan]?.[f.key] || '—'}</span>}
+                                </td>
+                              ))}
+                              {sep()}
+                              {showCommissions && commissionConfig.roles.map(role => (
+                                <td key={role} className={`border border-gray-200 p-0 text-center ${role === selectedRole ? 'bg-green-50' : 'bg-green-50/30'}`}>
+                                  {isAdmin
+                                    ? <input className={`w-full text-xs text-center px-1 py-0.5 focus:outline-none bg-transparent ${role === selectedRole ? 'focus:bg-green-100' : 'focus:bg-green-50'}`}
+                                        value={commRow?.commissions[role] ?? ''} placeholder="—" onChange={e => setPhoneCommCell(plan, role, e.target.value)} />
+                                    : <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>{commRow?.commissions[role] || '—'}</span>}
+                                </td>
+                              ))}
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Phone Plan Adders */}
+              {adderSec && (
+                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                  <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
+                    <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone Plan Adders</span>
+                  </div>
+                  {genericTable(adderSec, adderIdx, { skipPricing: true, showDetails: true, isAdder: true })}
+                  {isAdmin && addRowBtn(adderIdx, '+ Add Adder')}
+                </div>
+              )}
+
+              {/* Phone Plan Discounts */}
+              <div className="rounded-lg border border-blue-200 overflow-hidden">
+                <div className="bg-blue-600 px-3 py-1.5">
+                  <span className="text-xs font-bold text-white uppercase tracking-wide">Phone Plan Discounts</span>
+                </div>
+                {showPricing && (
+                  <div className="border-b border-blue-200 px-3 py-2 bg-blue-50 flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className="text-xs font-bold text-blue-700">Autopay</span>
+                      <span className="text-[10px] font-semibold text-white bg-blue-500 rounded px-1.5 py-0.5">GLOBAL</span>
+                    </span>
+                    <span className="text-xs text-blue-500 italic">— applies to all cellular &amp; internet lines</span>
+                  </div>
+                )}
+                {showPricing && (
+                  <>
+                    {subLabel('Occupational')}
+                    <div className="divide-y divide-blue-50">
+                      {discounts.map((d, idx) => {
+                        const isExp = expandedDiscount === idx
+                        const toggle = () => setExpandedDiscount(isExp ? null : idx)
+                        if (d.label === 'Company (FAN)') return (
+                          <div key={idx} className="bg-blue-50/10">
+                            <div className="flex items-center px-3 py-2 gap-2 cursor-pointer hover:bg-blue-50/30" onClick={toggle}>
+                              <span className="text-xs text-gray-600 shrink-0">Company (FAN)</span>
+                              <div className="flex items-center gap-2 ml-auto" onClick={e => e.stopPropagation()}>
+                                <input className="w-24 text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                                  value={companySearch} placeholder="Search..."
+                                  onChange={e => { const val = e.target.value; setCompanySearch(val); const m = companyDiscounts.find(c => c.company.toLowerCase() === val.toLowerCase()); setDiscount(idx, m?.discount ?? '') }}
+                                  onClick={() => setShowCompanyDb(true)} />
+                                {d.value && <span className="text-xs font-semibold text-white bg-blue-600 rounded px-2 py-0.5">{d.value}</span>}
+                              </div>
+                              <span className="text-gray-300 text-[10px]">{isExp ? '▲' : '▼'}</span>
+                            </div>
+                            {isExp && isAdmin && <div className="px-3 pb-2 pt-1 border-t border-blue-100">
+                              <textarea className="w-full text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none" rows={2}
+                                value={d.notes ?? ''} placeholder="Notes..." onChange={e => setDiscountNotes(idx, e.target.value)} />
+                            </div>}
+                          </div>
+                        )
+                        return (
+                          <div key={idx} className="bg-blue-50/10">
+                            <div className="flex items-center justify-between px-3 py-2 gap-2 cursor-pointer hover:bg-blue-50/30" onClick={toggle}>
+                              <span className="text-xs text-gray-600">{d.label}</span>
+                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                {isAdmin
+                                  ? <input className="w-24 text-xs text-right border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                                      value={d.value} placeholder="e.g. 25% off" onChange={e => setDiscount(idx, e.target.value)} />
+                                  : d.value
+                                    ? <span className="text-xs font-semibold text-white bg-blue-600 rounded px-2 py-0.5">{d.value}</span>
+                                    : <span className="text-xs text-gray-300">—</span>}
+                                <span className="text-gray-300 text-[10px]">{isExp ? '▲' : '▼'}</span>
+                              </div>
+                            </div>
+                            {isExp && (
+                              <div className="px-3 pb-2 pt-1 border-t border-blue-100">
+                                {isAdmin
+                                  ? <textarea className="w-full text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none" rows={2}
+                                      value={d.notes ?? ''} placeholder="Notes..." onChange={e => setDiscountNotes(idx, e.target.value)} />
+                                  : d.notes ? <p className="text-xs text-gray-500 italic">{d.notes}</p> : null}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                    {subLabel('Agent Applied')}
+                    <div className="divide-y divide-blue-50">
+                      {agentDiscounts.map((d, idx) => (
+                        <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-blue-50/10">
+                          <input className="flex-1 min-w-0 text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                            value={d.label} placeholder="Discount name..." onChange={e => setAgentDiscount(idx, 'label', e.target.value)} />
+                          <input className="w-20 text-xs text-right border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
+                            value={d.value} placeholder="Amount..." onChange={e => setAgentDiscount(idx, 'value', e.target.value)} />
+                          <button onClick={() => setAgentDiscounts(prev => prev.filter((_, j) => j !== idx))} className="text-gray-300 hover:text-red-400 text-xs shrink-0">✕</button>
+                        </div>
+                      ))}
+                      <button onClick={() => setAgentDiscounts(prev => [...prev, { label: '', value: '' }])}
+                        className="w-full text-xs text-blue-600 py-1.5 hover:bg-blue-50 text-center">+ Add Discount</button>
+                    </div>
+                    {subLabel('Retail Agent Benefits')}
+                    <div className="overflow-x-auto">
+                      <table className="text-xs w-full border-collapse">
+                        <thead>
+                          <tr className="bg-blue-50">
+                            <th className="border border-blue-200 w-6 px-1"></th>
+                            <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Agent</th>
+                            <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Benefit</th>
+                            <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Discount</th>
+                            <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {['Best Buy', 'Costco'].map(ag =>
+                            RETAIL_AGENT_BENEFITS.filter(b => b.agent === ag).map((b, i, arr) => {
+                              const key = `${b.agent}|${b.benefit}`
+                              const checked = checkedBenefits.has(key)
+                              return (
+                                <tr key={key} className={`cursor-pointer ${checked ? 'bg-blue-100' : 'hover:bg-blue-50/50'}`}
+                                  onClick={() => setCheckedBenefits(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })}>
+                                  <td className="border border-blue-200 px-1 text-center"><input type="checkbox" readOnly checked={checked} className="accent-blue-600 cursor-pointer" /></td>
+                                  {i === 0 ? <td rowSpan={arr.length} className="border border-blue-200 px-2 py-1 font-semibold text-gray-700 align-middle">{ag}</td> : null}
+                                  <td className="border border-blue-200 px-2 py-1 text-gray-700">{b.benefit}</td>
+                                  <td className="border border-blue-200 px-2 py-1 text-blue-700 font-medium">{b.discount}</td>
+                                  <td className="border border-blue-200 px-2 py-1 text-gray-500">{b.duration}</td>
+                                </tr>
+                              )
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Accessories Plans */}
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Accessories Plans (Watches &amp; Tablets)</span>
+                </div>
+                {sharedAccSec && (
+                  <>
+                    {subLabel('Shared Number')}
+                    {genericTable(sharedAccSec, sharedAccIdx, { skipPricing: true, showDetails: true, isAdder: true })}
+                    {addRowBtn(sharedAccIdx)}
+                  </>
+                )}
+                {newAccSec && (
+                  <>
+                    {subLabel('New Number')}
+                    {genericTable(newAccSec, newAccIdx, { skipPricing: true, showDetails: true, isAdder: true })}
+                    {addRowBtn(newAccIdx)}
+                  </>
+                )}
+              </div>
+
+              {/* Device Pricing & Trade-In */}
+              <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
+                  <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Device Pricing &amp; Trade-In</span>
+                </div>
+                <div className="px-4 py-6 text-center space-y-1">
+                  <p className="text-xs text-gray-400 italic">Device pricing and trade-in values — coming soon.</p>
+                  <p className="text-[11px] text-gray-300">AT&amp;T trade-in values and current device retail prices will appear here.</p>
+                </div>
+              </div>
+
             </div>
           </div>
+
+          {/* ── INTERNET ── */}
+          <div className="rounded-xl border-2 border-blue-200 overflow-hidden">
+            <div className="bg-blue-600 px-4 py-2">
+              <span className="text-white font-bold text-sm tracking-wide">INTERNET</span>
+            </div>
+            <div className="p-3">
+              <div className="rounded-lg border border-gray-200 overflow-hidden divide-y-2 divide-gray-200">
+                {INTERNET_GROUPS.map(group => renderInternetGroup(group))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── TV ── */}
+          {(() => {
+            const cableSec = sec('Cable / TV'); const cableIdx = si('Cable / TV')
+            const cableAddSec = sec('Cable Adders'); const cableAddIdx = si('Cable Adders')
+            const streamSec = sec('Streaming'); const streamIdx = si('Streaming')
+            return (
+              <div className="rounded-xl border-2 border-purple-200 overflow-hidden">
+                <div className="bg-purple-600 px-4 py-2">
+                  <span className="text-white font-bold text-sm tracking-wide">TV</span>
+                </div>
+                <div className="p-3 space-y-3">
+                  {cableSec && (
+                    <div className="rounded-lg border border-gray-200 overflow-hidden">
+                      <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5 flex items-center gap-2">
+                        <button onClick={() => setActiveDetail({ kind: 'section', si: cableIdx })}
+                          className="text-xs font-semibold text-purple-600 hover:text-purple-800 uppercase tracking-wide">Cable / TV</button>
+                      </div>
+                      {genericTable(cableSec, cableIdx, { isCable: true, showDetails: true })}
+                      {addRowBtn(cableIdx)}
+                      {cableAddSec && (
+                        <>
+                          {subLabel('Adders')}
+                          {genericTable(cableAddSec, cableAddIdx, { nameEditable: true })}
+                          {addRowBtn(cableAddIdx, '+ Add Adder')}
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {streamSec && (
+                    <div className="rounded-lg border border-gray-200 overflow-hidden">
+                      <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
+                        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Streaming</span>
+                      </div>
+                      {genericTable(streamSec, streamIdx, { nameEditable: true })}
+                      {addRowBtn(streamIdx)}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
         </>
       )}
 
@@ -1309,7 +1282,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           <div className="bg-white rounded-xl shadow-xl w-80 max-h-[70vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
               <span className="font-semibold text-sm text-gray-800">Company Discounts (FAN)</span>
-              <button onClick={() => setShowCompanyDb(false)} className="text-gray-400 hover:text-gray-600 text-base leading-none">✕</button>
+              <button onClick={() => setShowCompanyDb(false)} className="text-gray-400 hover:text-gray-600">✕</button>
             </div>
             <div className="overflow-auto flex-1">
               <table className="text-xs w-full border-collapse">
@@ -1325,26 +1298,22 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                     <tr key={i} className="hover:bg-blue-50 cursor-pointer" onClick={() => selectCompany(c)}>
                       <td className="border border-gray-200 px-2 py-1">{c.company}</td>
                       <td className="border border-gray-200 px-2 py-1 text-blue-600 font-medium">{c.discount}</td>
-                      {isAdmin && (
-                        <td className="border border-gray-200 px-1 text-center"
-                          onClick={e => { e.stopPropagation(); setCompanyDiscounts(prev => prev.filter((_, j) => j !== i)) }}>
-                          <button className="text-gray-300 hover:text-red-400">✕</button>
-                        </td>
-                      )}
+                      {isAdmin && <td className="border border-gray-200 px-1 text-center"
+                        onClick={e => { e.stopPropagation(); setCompanyDiscounts(prev => prev.filter((_, j) => j !== i)) }}>
+                        <button className="text-gray-300 hover:text-red-400">✕</button>
+                      </td>}
                     </tr>
                   ))}
                   {isAdmin && (
                     <tr>
                       <td className="border border-gray-200 p-0">
-                        <input className="w-full px-2 py-1 text-xs focus:outline-none focus:bg-blue-50"
-                          placeholder="Company name..." value={newCompany.company}
-                          onChange={e => setNewCompany(prev => ({ ...prev, company: e.target.value }))}
+                        <input className="w-full px-2 py-1 text-xs focus:outline-none focus:bg-blue-50" placeholder="Company name..."
+                          value={newCompany.company} onChange={e => setNewCompany(prev => ({ ...prev, company: e.target.value }))}
                           onKeyDown={e => e.key === 'Enter' && addCompany()} />
                       </td>
                       <td className="border border-gray-200 p-0">
-                        <input className="w-full px-2 py-1 text-xs focus:outline-none focus:bg-blue-50"
-                          placeholder="e.g. 18%" value={newCompany.discount}
-                          onChange={e => setNewCompany(prev => ({ ...prev, discount: e.target.value }))}
+                        <input className="w-full px-2 py-1 text-xs focus:outline-none focus:bg-blue-50" placeholder="e.g. 18%"
+                          value={newCompany.discount} onChange={e => setNewCompany(prev => ({ ...prev, discount: e.target.value }))}
                           onKeyDown={e => e.key === 'Enter' && addCompany()} />
                       </td>
                       <td className="border border-gray-200 px-1 text-center">
