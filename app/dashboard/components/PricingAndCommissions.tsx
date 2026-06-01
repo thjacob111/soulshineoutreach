@@ -768,7 +768,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     const detailExpanded = expandedSectionDetails.has(group.plan)
 
     return (
-      <div key={group.plan} className="rounded-lg border border-gray-200 overflow-hidden">
+      <div key={group.plan}>
         {/* Section header with overview link */}
         <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5 flex items-center gap-2">
           <button onClick={() => setActiveDetail({ kind: 'section', si: planIdx })}
@@ -1162,8 +1162,10 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           <div className="bg-blue-600 px-4 py-2">
             <span className="text-white font-bold text-sm tracking-wide">INTERNET</span>
           </div>
-          <div className="p-3 space-y-3">
-            {INTERNET_GROUPS.map(group => renderInternetGroupBlock(group))}
+          <div className="p-3">
+            <div className="rounded-lg border border-gray-200 overflow-hidden divide-y-2 divide-gray-200">
+              {INTERNET_GROUPS.map(group => renderInternetGroupBlock(group))}
+            </div>
           </div>
         </div>
       )}
