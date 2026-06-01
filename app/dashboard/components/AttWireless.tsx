@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import OrderFormFields, { OrderForm, AccessoryItem, EMPTY_FORM, Sect, Row } from './OrderFormFields'
 import OrderTrackerSheet from './OrderTrackerSheet'
@@ -278,6 +278,8 @@ function PricingView({ onBack }: { onBack: () => void }) {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [loading, setLoading] = useState(true)
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isLoadingRef = useRef(true)
 
   useEffect(() => {
     async function load() {
@@ -294,6 +296,25 @@ function PricingView({ onBack }: { onBack: () => void }) {
     }
     load()
   }, [])
+
+  useEffect(() => { if (!loading) isLoadingRef.current = false }, [loading])
+
+  useEffect(() => {
+    if (isLoadingRef.current) return
+    if (saveTimer.current) clearTimeout(saveTimer.current)
+    setSaved(false)
+    saveTimer.current = setTimeout(async () => {
+      setSaving(true)
+      await supabase.from('att_pricing_config').upsert({
+        id: 1, grid, discounts, company_discounts: companyDiscounts,
+        agent_discounts: agentDiscounts, updated_at: new Date().toISOString()
+      })
+      setSaving(false)
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    }, 1500)
+    return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
+  }, [grid, discounts, companyDiscounts, agentDiscounts])
 
   function setCell(plan: string, line: number, value: string) {
     setGrid(prev => ({ ...prev, [plan]: { ...(prev[plan] || {}), [line]: value } }))
@@ -338,7 +359,9 @@ function PricingView({ onBack }: { onBack: () => void }) {
       <div className="flex items-center gap-2">
         <button onClick={onBack} className="text-gray-400 hover:text-gray-600 text-lg">←</button>
         <h2 className="font-bold text-gray-800 text-base">Pricing & Promotions</h2>
-        {!isAdmin && <span className="ml-auto text-xs text-gray-400">View only</span>}
+        <span className="ml-auto text-xs text-gray-400">
+          {saving ? 'Saving…' : saved ? '✓ Saved' : !isAdmin ? 'View only' : ''}
+        </span>
       </div>
 
       <div>
@@ -453,13 +476,6 @@ function PricingView({ onBack }: { onBack: () => void }) {
         </div>
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={saving || saved}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl text-sm transition-colors disabled:opacity-60"
-      >
-        {saved ? '✓ Saved!' : saving ? 'Saving...' : 'Save Pricing'}
-      </button>
 
       {showCompanyDb && (
         <div
