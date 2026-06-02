@@ -23,7 +23,7 @@ const INTERNET_GROUPS = [
 
 // ── PRICING TYPES ─────────────────────────────────────────
 type PricingGrid = { [plan: string]: { [line: number]: string } }
-type DiscountRow = { label: string; value: string; notes?: string }
+type DiscountRow = { label: string; value: string; notes?: string; promoDetails?: Partial<PromotionDetails> }
 type CompanyDiscount = { company: string; discount: string }
 type RetailBenefit = { benefit: string; discount: string; duration: string }
 
@@ -161,6 +161,18 @@ interface RiderDetails {
   value: string; description: string
 }
 const EMPTY_RIDER_DETAILS: RiderDetails = { value: '', description: '' }
+
+// ── PROMOTION DETAIL TYPES ────────────────────────────────
+interface PromotionDetails {
+  value: string; eligibility: string; redeeming: string; description: string
+}
+const EMPTY_PROMOTION_DETAILS: PromotionDetails = { value: '', eligibility: '', redeeming: '', description: '' }
+const PROMOTION_DETAIL_FIELDS: { key: keyof PromotionDetails; label: string }[] = [
+  { key: 'value', label: 'Value' },
+  { key: 'eligibility', label: 'Eligibility' },
+  { key: 'redeeming', label: 'Redeeming' },
+  { key: 'description', label: 'Description' },
+]
 
 // ── COMMISSION TYPES ──────────────────────────────────────
 interface CommissionRow {
@@ -537,6 +549,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   const [checkedBenefits, setCheckedBenefits] = useState<Set<string>>(new Set())
   const [checkedInternetRows, setCheckedInternetRows] = useState<Set<string>>(new Set())
   const [planDetails, setPlanDetails] = useState<PlanDetailsMap>({})
+  const [retailBenefitDetails, setRetailBenefitDetails] = useState<Record<string, Partial<PromotionDetails>>>({})
   const [detailsExpanded, setDetailsExpanded] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
   const [expandedDiscount, setExpandedDiscount] = useState<number | null>(null)
@@ -564,7 +577,10 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
         setDiscounts(data.discounts?.length ? data.discounts : DEFAULT_DISCOUNTS)
         setCompanyDiscounts(data.company_discounts || [])
         setAgentDiscounts(data.agent_discounts || [])
-        setPlanDetails(data.plan_details || {})
+        const rawPlanDetails = data.plan_details || {}
+        const { __retail_promo, ...cleanPlanDetails } = rawPlanDetails
+        setRetailBenefitDetails(__retail_promo || {})
+        setPlanDetails(cleanPlanDetails)
         const cfg = data.commission_config ? migrateCommissionConfig(data.commission_config) : DEFAULT_COMMISSION
         setCommissionConfig(cfg)
         setSelectedRole(cfg.roles[0] ?? '')
@@ -574,7 +590,12 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     load()
   }, [])
 
-  useEffect(() => { if (!loading) isLoadingRef.current = false }, [loading])
+  useEffect(() => {
+    if (!loading) {
+      const id = setTimeout(() => { isLoadingRef.current = false }, 0)
+      return () => clearTimeout(id)
+    }
+  }, [loading])
 
   useEffect(() => {
     if (isLoadingRef.current) return
@@ -584,7 +605,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
       setSaving(true); setSaveError(null)
       const { error } = await supabase.from('att_pricing_config').upsert({
         id: 1, grid, discounts, company_discounts: companyDiscounts,
-        agent_discounts: agentDiscounts, plan_details: planDetails,
+        agent_discounts: agentDiscounts, plan_details: { ...planDetails, __retail_promo: retailBenefitDetails },
         commission_config: commissionConfig, updated_at: new Date().toISOString(),
       })
       setSaving(false)
@@ -592,10 +613,10 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
       else { setSaved(true); setTimeout(() => setSaved(false), 2000) }
     }, 1500)
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
-  }, [grid, discounts, companyDiscounts, agentDiscounts, planDetails, commissionConfig])
+  }, [grid, discounts, companyDiscounts, agentDiscounts, planDetails, retailBenefitDetails, commissionConfig])
 
-  const latestRef = useRef({ grid, discounts, companyDiscounts, agentDiscounts, planDetails, commissionConfig })
-  latestRef.current = { grid, discounts, companyDiscounts, agentDiscounts, planDetails, commissionConfig }
+  const latestRef = useRef({ grid, discounts, companyDiscounts, agentDiscounts, planDetails, retailBenefitDetails, commissionConfig })
+  latestRef.current = { grid, discounts, companyDiscounts, agentDiscounts, planDetails, retailBenefitDetails, commissionConfig }
 
   useEffect(() => {
     const handler = () => {
@@ -603,7 +624,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
       const s = latestRef.current
       supabase.from('att_pricing_config').upsert({
         id: 1, grid: s.grid, discounts: s.discounts, company_discounts: s.companyDiscounts,
-        agent_discounts: s.agentDiscounts, plan_details: s.planDetails,
+        agent_discounts: s.agentDiscounts, plan_details: { ...s.planDetails, __retail_promo: s.retailBenefitDetails },
         commission_config: s.commissionConfig, updated_at: new Date().toISOString(),
       }).then(({ error }) => {
         if (error) setSaveError(error.message)
@@ -627,6 +648,16 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   }
   function setDiscountNotes(idx: number, notes: string) {
     setDiscounts(prev => prev.map((d, i) => i !== idx ? d : { ...d, notes }))
+  }
+  function setDiscountPromoDetail(idx: number, field: keyof PromotionDetails, val: string) {
+    setDiscounts(prev => prev.map((d, i) => i !== idx ? d : {
+      ...d, promoDetails: { ...EMPTY_PROMOTION_DETAILS, ...d.promoDetails, [field]: val }
+    }))
+  }
+  function setRetailBenefitDetail(benefit: string, field: keyof PromotionDetails, val: string) {
+    setRetailBenefitDetails(prev => ({
+      ...prev, [benefit]: { ...EMPTY_PROMOTION_DETAILS, ...prev[benefit], [field]: val }
+    }))
   }
   function setAgentDiscount(idx: number, field: 'label' | 'value', value: string) {
     setAgentDiscounts(prev => prev.map((d, i) => i !== idx ? d : { ...d, [field]: value }))
@@ -1080,7 +1111,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               <table className="text-xs w-full border-collapse">
                 <thead>
                   <tr className="bg-white">
-                    <th rowSpan={showPricing ? 2 : 1} className="border border-gray-200 w-5 px-1"></th>
+                    <th rowSpan={showPricing ? 2 : 1} className="border border-gray-200 w-5 p-0"></th>
                     <th rowSpan={showPricing ? 2 : 1} className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-32">Rider</th>
                     {showPricing && <th rowSpan={2} className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-14">Price</th>}
                     {showPricing && <th colSpan={2} className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700">Details</th>}
@@ -1100,7 +1131,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <tbody>
                   {ridersSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
-                      <td className="border border-gray-200 px-1 text-center w-5">
+                      <td className="border border-gray-200 p-0 text-center w-5">
                         <input type="checkbox" checked={checkedInternetRows.has(`${group.riders}-${ri}`)}
                           onChange={() => setCheckedInternetRows(prev => { const n = new Set(prev); const k = `${group.riders}-${ri}`; n.has(k) ? n.delete(k) : n.add(k); return n })}
                           className="accent-blue-600 cursor-pointer" />
@@ -1152,7 +1183,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <tbody>
                   {discSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
-                      <td className="border border-gray-200 px-1 text-center w-5">
+                      <td className="border border-gray-200 p-0 text-center w-5">
                         <input type="checkbox" checked={checkedInternetRows.has(`${group.discounts}-${ri}`)}
                           onChange={() => setCheckedInternetRows(prev => { const n = new Set(prev); const k = `${group.discounts}-${ri}`; n.has(k) ? n.delete(k) : n.add(k); return n })}
                           className="accent-blue-600 cursor-pointer" />
@@ -1402,55 +1433,65 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 {showPricing && (
                   <>
                     {subLabel('Occupational')}
-                    <div className="divide-y divide-blue-50">
-                      {discounts.map((d, idx) => {
-                        const isExp = expandedDiscount === idx
-                        const toggle = () => setExpandedDiscount(isExp ? null : idx)
-                        if (d.label === 'Company (FAN)') return (
-                          <div key={idx} className="bg-blue-50/10">
-                            <div className="flex items-center px-3 py-2 gap-2 cursor-pointer hover:bg-blue-50/30" onClick={toggle}>
-                              <span className="text-xs text-gray-600 shrink-0">Company (FAN)</span>
-                              <div className="flex items-center gap-2 ml-auto" onClick={e => e.stopPropagation()}>
-                                <input className="w-24 text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
-                                  value={companySearch} placeholder="Search..."
-                                  onChange={e => { const val = e.target.value; setCompanySearch(val); const m = companyDiscounts.find(c => c.company.toLowerCase() === val.toLowerCase()); setDiscount(idx, m?.discount ?? '') }}
-                                  onClick={() => setShowCompanyDb(true)} />
-                                {d.value && <span className="text-xs font-semibold text-white bg-blue-600 rounded px-2 py-0.5">{d.value}</span>}
-                              </div>
-                              <span className="text-gray-300 text-[10px]">{isExp ? '▲' : '▼'}</span>
-                            </div>
-                            {isExp && canEdit && <div className="px-3 pb-2 pt-1 border-t border-blue-100">
-                              <textarea className="w-full text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none" rows={2}
-                                value={d.notes ?? ''} placeholder="Notes..." onChange={e => setDiscountNotes(idx, e.target.value)} />
-                            </div>}
-                          </div>
-                        )
-                        return (
-                          <div key={idx} className="bg-blue-50/10">
-                            <div className="flex items-center justify-between px-3 py-2 gap-2 cursor-pointer hover:bg-blue-50/30" onClick={toggle}>
-                              <span className="text-xs text-gray-600">{d.label}</span>
-                              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                {canEdit
-                                  ? <input className="w-24 text-xs text-right border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
-                                      value={d.value} placeholder="e.g. 25% off" onChange={e => setDiscount(idx, e.target.value)} />
-                                  : d.value
-                                    ? <span className="text-xs font-semibold text-white bg-blue-600 rounded px-2 py-0.5">{d.value}</span>
-                                    : <span className="text-xs text-gray-300">—</span>}
-                                <span className="text-gray-300 text-[10px]">{isExp ? '▲' : '▼'}</span>
-                              </div>
-                            </div>
-                            {isExp && (
-                              <div className="px-3 pb-2 pt-1 border-t border-blue-100">
-                                {canEdit
-                                  ? <textarea className="w-full text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none" rows={2}
-                                      value={d.notes ?? ''} placeholder="Notes..." onChange={e => setDiscountNotes(idx, e.target.value)} />
-                                  : d.notes ? <p className="text-xs text-gray-500 italic">{d.notes}</p> : null}
-                              </div>
-                            )}
-                          </div>
-                        )
-                      })}
-                    </div>
+                    {(() => {
+                      const discDetailsExp = expandedSectionDetails.has('Phone Plan Discounts')
+                      return (
+                        <div className="overflow-x-auto">
+                          <table className="text-xs w-full border-collapse">
+                            <thead>
+                              <tr className="bg-white">
+                                <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-36">Discount</th>
+                                <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-24">Value</th>
+                                <th className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
+                                  onClick={() => toggleExp('Phone Plan Discounts')}>Details {discDetailsExp ? '▼' : '▶'}</th>
+                                {discDetailsExp && PROMOTION_DETAIL_FIELDS.map(f => (
+                                  <th key={f.key} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 w-24">{f.label}</th>
+                                ))}
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {discounts.map((d, idx) => (
+                                <tr key={idx} className="bg-white hover:bg-blue-50/20">
+                                  <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap">
+                                    {d.label === 'Company (FAN)' ? (
+                                      <div className="flex items-center gap-1.5">
+                                        <span>Company (FAN)</span>
+                                        <input className="w-20 text-xs border border-blue-200 rounded px-1 py-0.5 focus:outline-none focus:border-blue-400"
+                                          value={companySearch} placeholder="Search..."
+                                          onChange={e => { const val = e.target.value; setCompanySearch(val); const m = companyDiscounts.find(c => c.company.toLowerCase() === val.toLowerCase()); setDiscount(idx, m?.discount ?? '') }}
+                                          onClick={() => setShowCompanyDb(true)} />
+                                      </div>
+                                    ) : d.label}
+                                  </td>
+                                  <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-24">
+                                    {d.label === 'Company (FAN)'
+                                      ? d.value
+                                        ? <span className="block text-xs font-semibold text-white bg-blue-600 rounded mx-1 my-0.5 px-2 py-0.5">{d.value}</span>
+                                        : <span className="block text-xs text-gray-300 py-0.5">—</span>
+                                      : canEdit
+                                        ? <input className="w-full text-xs text-right px-2 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                                            value={d.value} placeholder="e.g. 25% off" onChange={e => setDiscount(idx, e.target.value)} />
+                                        : d.value
+                                          ? <span className="block text-xs font-semibold text-white bg-blue-600 rounded mx-1 my-0.5 px-2 py-0.5">{d.value}</span>
+                                          : <span className="block text-xs text-gray-300 py-0.5">—</span>}
+                                  </td>
+                                  <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20 w-14">—</td>
+                                  {discDetailsExp && PROMOTION_DETAIL_FIELDS.map(f => (
+                                    <td key={f.key} className="border border-gray-200 p-0 bg-blue-50/30 w-24">
+                                      {canEdit
+                                        ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                                            value={d.promoDetails?.[f.key] ?? ''} placeholder="—"
+                                            onChange={e => setDiscountPromoDetail(idx, f.key, e.target.value)} />
+                                        : <span className="block px-1 py-0.5 text-gray-700">{d.promoDetails?.[f.key] || '—'}</span>}
+                                    </td>
+                                  ))}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )
+                    })()}
                   </>
                 )}
               </div>
@@ -1460,35 +1501,54 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
                   <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone Plan Promotions</span>
                 </div>
-                {showPricing && (
-                  <div className="overflow-x-auto">
-                    <table className="text-xs w-full border-collapse">
-                      <thead>
-                        <tr className="bg-blue-50">
-                          <th className="border border-blue-200 w-6 px-1"></th>
-                          <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Benefit</th>
-                          <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Discount</th>
-                          <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Duration</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {RETAIL_AGENT_BENEFITS.map(b => {
-                          const key = b.benefit
-                          const checked = checkedBenefits.has(key)
-                          return (
-                            <tr key={key} className={`cursor-pointer ${checked ? 'bg-blue-100' : 'hover:bg-blue-50/50'}`}
-                              onClick={() => setCheckedBenefits(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })}>
-                              <td className="border border-blue-200 px-1 text-center"><input type="checkbox" readOnly checked={checked} className="accent-blue-600 cursor-pointer" /></td>
-                              <td className="border border-blue-200 px-2 py-1 text-gray-700">{b.benefit}</td>
-                              <td className="border border-blue-200 px-2 py-1 text-blue-700 font-medium">{b.discount || '—'}</td>
-                              <td className="border border-blue-200 px-2 py-1 text-gray-500">{b.duration || '—'}</td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
+                {showPricing && (() => {
+                  const promoDetailsExp = expandedSectionDetails.has('Phone Plan Promotions')
+                  return (
+                    <div className="overflow-x-auto">
+                      <table className="text-xs w-full border-collapse">
+                        <thead>
+                          <tr className="bg-blue-50">
+                            <th className="border border-blue-200 w-5 p-0"></th>
+                            <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Benefit</th>
+                            <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Discount</th>
+                            <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Duration</th>
+                            <th className="border border-blue-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 cursor-pointer hover:bg-blue-100 select-none"
+                              onClick={() => toggleExp('Phone Plan Promotions')}>Details {promoDetailsExp ? '▼' : '▶'}</th>
+                            {promoDetailsExp && PROMOTION_DETAIL_FIELDS.map(f => (
+                              <th key={f.key} className="border border-blue-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 w-24">{f.label}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {RETAIL_AGENT_BENEFITS.map(b => {
+                            const key = b.benefit
+                            const checked = checkedBenefits.has(key)
+                            return (
+                              <tr key={key} className={`cursor-pointer ${checked ? 'bg-blue-100' : 'hover:bg-blue-50/50'}`}
+                                onClick={() => setCheckedBenefits(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })}>
+                                <td className="border border-blue-200 p-0 text-center w-5"><input type="checkbox" readOnly checked={checked} className="accent-blue-600 cursor-pointer" /></td>
+                                <td className="border border-blue-200 px-2 py-1 text-gray-700">{b.benefit}</td>
+                                <td className="border border-blue-200 px-2 py-1 text-blue-700 font-medium">{b.discount || '—'}</td>
+                                <td className="border border-blue-200 px-2 py-1 text-gray-500">{b.duration || '—'}</td>
+                                <td className="border border-blue-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20">—</td>
+                                {promoDetailsExp && PROMOTION_DETAIL_FIELDS.map(f => (
+                                  <td key={f.key} className="border border-blue-200 p-0 bg-blue-50/30 w-24"
+                                    onClick={e => e.stopPropagation()}>
+                                    {canEdit
+                                      ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                                          value={retailBenefitDetails[key]?.[f.key] ?? ''} placeholder="—"
+                                          onChange={e => setRetailBenefitDetail(key, f.key, e.target.value)} />
+                                      : <span className="block px-1 py-0.5 text-gray-700">{retailBenefitDetails[key]?.[f.key] || '—'}</span>}
+                                  </td>
+                                ))}
+                              </tr>
+                            )
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Accessories Plans */}
@@ -1547,7 +1607,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                       {cableAddSec && (
                         <>
                           {subLabel('Adders')}
-                          {genericTable(cableAddSec, cableAddIdx, { nameEditable: true })}
+                          {genericTable(cableAddSec, cableAddIdx, { nameEditable: true, showDetails: true, isAdder: true })}
                           {addRowBtn(cableAddIdx, '+ Add Adder')}
                         </>
                       )}
@@ -1558,7 +1618,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                       <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
                         <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Streaming</span>
                       </div>
-                      {genericTable(streamSec, streamIdx, { nameEditable: true })}
+                      {genericTable(streamSec, streamIdx, { nameEditable: true, showDetails: true, isAdder: true })}
                       {addRowBtn(streamIdx)}
                     </div>
                   )}
