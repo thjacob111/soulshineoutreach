@@ -569,9 +569,14 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
 
   useEffect(() => {
     async function load() {
+      isLoadingRef.current = true
+      setLoading(true)
+      setIsEditing(false)
+      setActiveDetail(null)
       const { data: { user } } = await supabase.auth.getUser()
       setIsAdmin(user?.email === ADMIN_EMAIL)
-      const { data } = await supabase.from('att_pricing_config').select('*').eq('id', 1).single()
+      const rowId = userType === 'Personal' ? 1 : 2
+      const { data } = await supabase.from('att_pricing_config').select('*').eq('id', rowId).single()
       if (data) {
         setGrid(data.grid || {})
         setDiscounts(data.discounts?.length ? data.discounts : DEFAULT_DISCOUNTS)
@@ -584,11 +589,20 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
         const cfg = data.commission_config ? migrateCommissionConfig(data.commission_config) : DEFAULT_COMMISSION
         setCommissionConfig(cfg)
         setSelectedRole(cfg.roles[0] ?? '')
+      } else {
+        setGrid({})
+        setDiscounts(DEFAULT_DISCOUNTS)
+        setCompanyDiscounts([])
+        setAgentDiscounts([])
+        setRetailBenefitDetails({})
+        setPlanDetails({})
+        setCommissionConfig(DEFAULT_COMMISSION)
+        setSelectedRole(DEFAULT_COMMISSION.roles[0] ?? '')
       }
       setLoading(false)
     }
     load()
-  }, [])
+  }, [userType])
 
   useEffect(() => {
     if (!loading) {
@@ -604,7 +618,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     saveTimer.current = setTimeout(async () => {
       setSaving(true); setSaveError(null)
       const { error } = await supabase.from('att_pricing_config').upsert({
-        id: 1, grid, discounts, company_discounts: companyDiscounts,
+        id: userType === 'Personal' ? 1 : 2, grid, discounts, company_discounts: companyDiscounts,
         agent_discounts: agentDiscounts, plan_details: { ...planDetails, __retail_promo: retailBenefitDetails },
         commission_config: commissionConfig, updated_at: new Date().toISOString(),
       })
@@ -613,17 +627,17 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
       else { setSaved(true); setTimeout(() => setSaved(false), 2000) }
     }, 1500)
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current) }
-  }, [grid, discounts, companyDiscounts, agentDiscounts, planDetails, retailBenefitDetails, commissionConfig])
+  }, [grid, discounts, companyDiscounts, agentDiscounts, planDetails, retailBenefitDetails, commissionConfig, userType])
 
-  const latestRef = useRef({ grid, discounts, companyDiscounts, agentDiscounts, planDetails, retailBenefitDetails, commissionConfig })
-  latestRef.current = { grid, discounts, companyDiscounts, agentDiscounts, planDetails, retailBenefitDetails, commissionConfig }
+  const latestRef = useRef({ grid, discounts, companyDiscounts, agentDiscounts, planDetails, retailBenefitDetails, commissionConfig, userType })
+  latestRef.current = { grid, discounts, companyDiscounts, agentDiscounts, planDetails, retailBenefitDetails, commissionConfig, userType }
 
   useEffect(() => {
     const handler = () => {
       if (isLoadingRef.current) return
       const s = latestRef.current
       supabase.from('att_pricing_config').upsert({
-        id: 1, grid: s.grid, discounts: s.discounts, company_discounts: s.companyDiscounts,
+        id: s.userType === 'Personal' ? 1 : 2, grid: s.grid, discounts: s.discounts, company_discounts: s.companyDiscounts,
         agent_discounts: s.agentDiscounts, plan_details: { ...s.planDetails, __retail_promo: s.retailBenefitDetails },
         commission_config: s.commissionConfig, updated_at: new Date().toISOString(),
       }).then(({ error }) => {
