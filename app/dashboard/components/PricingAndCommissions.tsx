@@ -1209,7 +1209,8 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           <>
             {subLabel('Discounts')}
             <div>
-              <table className="text-xs w-full border-collapse">
+              <table className="text-xs w-full border-collapse table-fixed">
+                <colgroup><col className="w-5" /><col /><col className="w-14" /></colgroup>
                 <tbody>
                   {discSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
