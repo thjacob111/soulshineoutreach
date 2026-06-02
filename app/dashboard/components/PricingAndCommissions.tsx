@@ -34,7 +34,7 @@ const RETAIL_AGENT_BENEFITS: RetailBenefit[] = [
   { benefit: 'Gift Card (Costco)',      discount: '$100',              duration: 'Upfront (upgrades too)' },
   { benefit: 'Waived Activation Fee',  discount: '−$35',              duration: '1st bill'               },
   { benefit: 'Pay Off Phone',          discount: '',                   duration: ''                       },
-  { benefit: 'Trade In',               discount: '',                   duration: ''                       },
+  { benefit: 'Phone Trade-In',         discount: '',                   duration: ''                       },
   { benefit: 'BYOD',                   discount: '',                   duration: ''                       },
 ]
 
@@ -1180,11 +1180,6 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <tbody>
                   {promoSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
-                      <td className="border border-gray-200 px-1 text-center w-5">
-                        <input type="checkbox" checked={checkedInternetRows.has(`${group.promotions}-${ri}`)}
-                          onChange={() => setCheckedInternetRows(prev => { const n = new Set(prev); const k = `${group.promotions}-${ri}`; n.has(k) ? n.delete(k) : n.add(k); return n })}
-                          className="accent-blue-600 cursor-pointer" />
-                      </td>
                       <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap w-32">
                         {canEdit
                           ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none bg-transparent" value={row.plan} placeholder="Promotion…"
