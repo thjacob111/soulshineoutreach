@@ -836,9 +836,8 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
         <table className="text-xs w-full border-collapse">
           <thead>
             <tr className="bg-white">
-              {showPrice && opts.singlePrice && singlePriceHeader()}
               <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap">Plan</th>
-              {showPrice && !opts.singlePrice && priceHeaders()}
+              {showPrice && (opts.singlePrice ? singlePriceHeader() : priceHeaders())}
               {showPricing && opts.showDetails && (
                 <th className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
                   onClick={() => toggleExp(section.name)}>Details {detailExp ? '▼' : '▶'}</th>
@@ -857,7 +856,6 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           <tbody>
             {section.rows.map((row, ri) => (
               <tr key={ri} className="bg-white hover:bg-gray-50">
-                {showPrice && opts.singlePrice && singlePriceCell(sIdx, ri, row)}
                 <td className={`border border-gray-200 px-1 py-0.5 whitespace-nowrap ${
                   opts.isCable ? 'font-medium text-purple-600 hover:text-purple-800 cursor-pointer'
                   : opts.isAdder ? 'font-medium text-gray-700 hover:text-blue-600 cursor-pointer'
@@ -873,7 +871,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                         onChange={e => setRowPlanName(sIdx, ri, e.target.value)} />
                     : row.plan}
                 </td>
-                {showPrice && !opts.singlePrice && priceCells(sIdx, ri, row)}
+                {showPrice && (opts.singlePrice ? singlePriceCell(sIdx, ri, row) : priceCells(sIdx, ri, row))}
                 {showPricing && opts.showDetails && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20 w-14">—</td>}
                 {showPrice && opts.showDetails && detailExp && opts.isCable && (
                   <td className="border border-gray-200 p-0 text-center bg-blue-50/30 min-w-[80px]">
