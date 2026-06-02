@@ -885,27 +885,34 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   function bandHeader() {
     const nRoles = commissionConfig.roles.length
     if (!showPricing && !showCommissions) return null
+    // x=127: right edge of plan col (card offset 15px + plan col 112px)
+    // x=347: right edge of pricing (127 + 220)
+    // x=403: right edge of product  (347 + 56)
     return (
-      <div className="flex items-stretch border-b-2 border-gray-300 shadow-sm">
+      <div className="flex items-stretch border-b-2 border-gray-400">
+        <div className="bg-gray-200 text-gray-700 text-[10px] font-bold text-center py-2 uppercase tracking-widest flex items-center justify-center shrink-0"
+          style={{width: 127}}>
+          PLAN
+        </div>
         {showPricing && (
-          <>
-            <div className="bg-blue-200 text-blue-800 text-[10px] font-bold text-center py-1.5 uppercase tracking-widest border-r-2 border-blue-300 flex items-center justify-center shrink-0"
-              style={{width: 332}}>
-              Pricing
-            </div>
-            <div className="bg-purple-200 text-purple-800 text-[10px] font-bold text-center py-1.5 uppercase tracking-widest flex items-center justify-center shrink-0"
-              style={{width: 56}}>
-              Knowledge
-            </div>
-          </>
+          <div className="bg-blue-200 text-blue-800 text-[10px] font-bold text-center py-2 uppercase tracking-widest flex items-center justify-center shrink-0"
+            style={{width: 220}}>
+            PRICING
+          </div>
+        )}
+        {showPricing && (
+          <div className="bg-purple-200 text-purple-800 text-[10px] font-bold text-center py-2 uppercase tracking-widest flex items-center justify-center shrink-0"
+            style={{width: 56}}>
+            PRODUCT
+          </div>
         )}
         {showPricing && showCommissions && (
-          <div className="bg-gray-400 shrink-0" style={{width: 2}} />
+          <div className="bg-gray-300 shrink-0" style={{width: 2}} />
         )}
         {showCommissions && (
-          <div className="bg-green-200 text-green-800 text-[10px] font-bold text-center py-1.5 uppercase tracking-widest flex items-center justify-center shrink-0"
+          <div className="bg-green-200 text-green-800 text-[10px] font-bold text-center py-2 uppercase tracking-widest flex items-center justify-center shrink-0"
             style={{minWidth: nRoles * 56}}>
-            Commissions
+            COMMISSION
           </div>
         )}
       </div>
@@ -1347,7 +1354,12 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
 
       {(showPricing || showCommissions) && selectedCarriers.has('AT&T') && (
         <div className="overflow-x-auto">
-          <div className="min-w-max space-y-0">
+          <div className="relative min-w-max space-y-0">
+            {showPricing && <>
+              <div className="absolute top-0 bottom-0 z-20 pointer-events-none" style={{left:127,width:2,background:'#3b82f6'}} />
+              <div className="absolute top-0 bottom-0 z-20 pointer-events-none" style={{left:347,width:2,background:'#8b5cf6'}} />
+            </>}
+            {showPricing && showCommissions && <div className="absolute top-0 bottom-0 z-20 pointer-events-none" style={{left:403,width:2,background:'#22c55e'}} />}
             {/* BAND HEADER */}
             {bandHeader()}
 
