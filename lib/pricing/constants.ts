@@ -84,11 +84,11 @@ function emptyInternetGroup(label: 'Fiber' | 'Coax' | '5G'): InternetGroup {
 function emptyDevices(): WirelessDevicesGroup {
   return {
     tradeIn: {
-      currentDevice: { device: '', brand: '', year: '', model: '', storage: '', condition: '' },
+      currentDevice: { device: '', brand: '', year: '', model: '', submodel: '', storage: '', condition: '' },
       tradeInStandard: '',
       tradeInPromo: '',
       translatorTiers: { lessThan: '', rangeMin: '', rangeMax: '', greaterThan: '', promoLessThan: '', promoRange: '', promoGreaterThan: '' },
-      newDevice: { device: '', brand: '', year: '', model: '', storage: '', condition: '' },
+      newDevice: { device: '', brand: '', year: '', model: '', submodel: '', storage: '', condition: '' },
       cost: '',
       customerTotal: '',
       customerMonthly: '',

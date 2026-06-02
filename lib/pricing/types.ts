@@ -51,6 +51,7 @@ export interface DeviceDropdowns {
   brand: string
   year: string
   model: string
+  submodel: string
   storage: string
   condition: string
 }
