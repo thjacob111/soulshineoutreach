@@ -1472,18 +1472,18 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                   <>
                     {subLabel('Occupational')}
                     {(() => {
-                      const discDetailsExp = expandedSectionDetails.has('Phone Plan Discounts')
                       return (
-                        <div>
-                          <table className="text-xs border-collapse table-fixed">
+                        <div className="overflow-x-auto">
+                          <table className="text-xs w-full border-collapse">
                             <thead>
                               <tr className="bg-white">
-                                <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-36">Discount</th>
-                                <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-24">Value</th>
-                                <th className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
-                                  onClick={() => toggleExp('Phone Plan Discounts')}>Details {discDetailsExp ? '▼' : '▶'}</th>
-                                {discDetailsExp && PROMOTION_DETAIL_FIELDS.map(f => (
-                                  <th key={f.key} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 w-24">{f.label}</th>
+                                <th rowSpan={2} className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-36">Discount</th>
+                                <th rowSpan={2} className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-24">Value</th>
+                                <th colSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 uppercase tracking-wide">Details</th>
+                              </tr>
+                              <tr className="bg-blue-50/30">
+                                {PROMOTION_DETAIL_FIELDS.map(f => (
+                                  <th key={f.key} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center w-16">{f.label}</th>
                                 ))}
                               </tr>
                             </thead>
@@ -1539,20 +1539,20 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                   <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone Plan Promotions</span>
                 </div>
                 {showPricing && (() => {
-                  const promoDetailsExp = expandedSectionDetails.has('Phone Plan Promotions')
                   return (
-                    <div>
-                      <table className="text-xs border-collapse table-fixed">
+                    <div className="overflow-x-auto">
+                      <table className="text-xs w-full border-collapse">
                         <thead>
                           <tr className="bg-blue-50">
-                            <th className="border border-blue-200 w-5 p-0"></th>
-                            <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Benefit</th>
-                            <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Discount</th>
-                            <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Duration</th>
-                            <th className="border border-blue-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 cursor-pointer hover:bg-blue-100 select-none"
-                              onClick={() => toggleExp('Phone Plan Promotions')}>Details {promoDetailsExp ? '▼' : '▶'}</th>
-                            {promoDetailsExp && PROMOTION_DETAIL_FIELDS.map(f => (
-                              <th key={f.key} className="border border-blue-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 w-24">{f.label}</th>
+                            <th rowSpan={2} className="border border-blue-200 w-5 p-0"></th>
+                            <th rowSpan={2} className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Benefit</th>
+                            <th rowSpan={2} className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Discount</th>
+                            <th rowSpan={2} className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Duration</th>
+                            <th colSpan={4} className="border border-blue-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 uppercase tracking-wide">Details</th>
+                          </tr>
+                          <tr className="bg-blue-50/60">
+                            {PROMOTION_DETAIL_FIELDS.map(f => (
+                              <th key={f.key} className="border border-blue-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center w-16">{f.label}</th>
                             ))}
                           </tr>
                         </thead>
