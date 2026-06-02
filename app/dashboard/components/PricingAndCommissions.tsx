@@ -882,6 +882,36 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     )
   }
 
+  function bandHeader() {
+    const nRoles = commissionConfig.roles.length
+    if (!showPricing && !showCommissions) return null
+    return (
+      <div className="flex items-stretch border-b-2 border-gray-300 shadow-sm">
+        {showPricing && (
+          <>
+            <div className="bg-blue-200 text-blue-800 text-[10px] font-bold text-center py-1.5 uppercase tracking-widest border-r-2 border-blue-300 flex items-center justify-center shrink-0"
+              style={{width: 348}}>
+              Pricing
+            </div>
+            <div className="bg-purple-200 text-purple-800 text-[10px] font-bold text-center py-1.5 uppercase tracking-widest flex items-center justify-center shrink-0"
+              style={{width: 56}}>
+              Knowledge
+            </div>
+          </>
+        )}
+        {showPricing && showCommissions && (
+          <div className="bg-gray-400 shrink-0" style={{width: 2}} />
+        )}
+        {showCommissions && (
+          <div className="bg-green-200 text-green-800 text-[10px] font-bold text-center py-1.5 uppercase tracking-widest flex items-center justify-center shrink-0"
+            style={{minWidth: nRoles * 56}}>
+            Commissions
+          </div>
+        )}
+      </div>
+    )
+  }
+
   function sep() {
     if (!showPricing || !showCommissions) return null
     return <td className="bg-gray-200 w-0.5 p-0 border-0" />
@@ -914,7 +944,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     const showSep = showCommissions && (showPrice || (opts.skipPricing ? false : showPricing))
 
     return (
-      <div className="overflow-x-auto">
+      <div>
         <table className="text-xs w-full border-collapse">
           <thead>
             <tr className="bg-white">
@@ -1002,7 +1032,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           <button onClick={() => setActiveDetail({ kind: 'section', si: planIdx })}
             className="text-xs font-semibold text-blue-600 hover:text-blue-800 uppercase tracking-wide">{group.plan}</button>
         </div>
-        <div className="overflow-x-auto">
+        <div>
           <table className="text-xs w-full border-collapse">
             <thead>
               <tr className="bg-white">
@@ -1107,7 +1137,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
         {ridersSec && (showPricing || showCommissions) && (
           <>
             {subLabel('Riders')}
-            <div className="overflow-x-auto">
+            <div>
               <table className="text-xs w-full border-collapse">
                 <thead>
                   <tr className="bg-white">
@@ -1178,7 +1208,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
         {discSec && showPricing && (
           <>
             {subLabel('Discounts')}
-            <div className="overflow-x-auto">
+            <div>
               <table className="text-xs w-full border-collapse">
                 <tbody>
                   {discSec.rows.map((row, ri) => (
@@ -1206,7 +1236,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
         {promoSec && showPricing && (
           <>
             {subLabel('Promotions')}
-            <div className="overflow-x-auto">
+            <div>
               <table className="text-xs w-full border-collapse">
                 <tbody>
                   {promoSec.rows.map((row, ri) => (
@@ -1313,9 +1343,14 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
       )}
 
       {(showPricing || showCommissions) && selectedCarriers.has('AT&T') && (
-        <>
+        <div className="overflow-x-auto">
+          <div className="min-w-max space-y-0">
+            {/* BAND HEADER */}
+            {bandHeader()}
+
+            <div className="space-y-4 pt-1">
           {/* ── CELLULAR ── */}
-          <div className="rounded-xl border-2 border-blue-200 overflow-hidden">
+          <div className="rounded-xl border-2 border-blue-200">
             <div className="bg-blue-600 px-4 py-2">
               <span className="text-white font-bold text-sm tracking-wide">CELLULAR</span>
             </div>
@@ -1323,11 +1358,11 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
 
               {/* Phone Plans */}
               {phoneSec && (
-                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <div className="rounded-lg border border-gray-200">
                   <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
                     <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone Plans</span>
                   </div>
-                  <div className="overflow-x-auto">
+                  <div>
                     <table className="text-xs w-full min-w-max border-collapse">
                       <thead>
                         <tr className="bg-white">
@@ -1352,8 +1387,8 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                             <th key={f.key} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center whitespace-nowrap max-w-[60px]">{f.label}</th>
                           ))}
                           {showCommissions && commissionConfig.roles.flatMap(role => [
-                            <th key={`${role}_new`} className={`border border-gray-200 px-1 py-0.5 text-[9px] font-semibold text-center whitespace-nowrap w-14 ${role === selectedRole ? 'bg-green-500 text-white' : 'bg-green-50/60 text-green-600'}`}>New device</th>,
-                            <th key={`${role}_byod`} className={`border border-gray-200 px-1 py-0.5 text-[9px] font-semibold text-center whitespace-nowrap w-14 ${role === selectedRole ? 'bg-green-500 text-white' : 'bg-green-50/60 text-green-600'}`}>BYOD</th>,
+                            <th key={`${role}_new`} className={`border border-gray-200 px-1 py-0.5 text-[9px] font-semibold text-center whitespace-nowrap w-[28px] ${role === selectedRole ? 'bg-green-500 text-white' : 'bg-green-50/60 text-green-600'}`}>New device</th>,
+                            <th key={`${role}_byod`} className={`border border-gray-200 px-1 py-0.5 text-[9px] font-semibold text-center whitespace-nowrap w-[28px] ${role === selectedRole ? 'bg-green-500 text-white' : 'bg-green-50/60 text-green-600'}`}>BYOD</th>,
                           ])}
                         </tr>
                       </thead>
@@ -1407,7 +1442,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
 
               {/* Phone Plan Adders */}
               {adderSec && (
-                <div className="rounded-lg border border-gray-200 overflow-hidden">
+                <div className="rounded-lg border border-gray-200">
                   <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
                     <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone Plan Adders</span>
                   </div>
@@ -1417,7 +1452,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               )}
 
               {/* Phone Plan Discounts */}
-              <div className="rounded-lg border border-blue-200 overflow-hidden">
+              <div className="rounded-lg border border-blue-200">
                 <div className="bg-blue-600 px-3 py-1.5">
                   <span className="text-xs font-bold text-white uppercase tracking-wide">Phone Plan Discounts</span>
                 </div>
@@ -1436,7 +1471,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                     {(() => {
                       const discDetailsExp = expandedSectionDetails.has('Phone Plan Discounts')
                       return (
-                        <div className="overflow-x-auto">
+                        <div>
                           <table className="text-xs w-full border-collapse">
                             <thead>
                               <tr className="bg-white">
@@ -1497,14 +1532,14 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               </div>
 
               {/* Phone Plan Promotions */}
-              <div className="rounded-lg border border-gray-200 overflow-hidden">
+              <div className="rounded-lg border border-gray-200">
                 <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
                   <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone Plan Promotions</span>
                 </div>
                 {showPricing && (() => {
                   const promoDetailsExp = expandedSectionDetails.has('Phone Plan Promotions')
                   return (
-                    <div className="overflow-x-auto">
+                    <div>
                       <table className="text-xs w-full border-collapse">
                         <thead>
                           <tr className="bg-blue-50">
@@ -1552,7 +1587,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               </div>
 
               {/* Accessories Plans */}
-              <div className="rounded-lg border border-gray-200 overflow-hidden">
+              <div className="rounded-lg border border-gray-200">
                 <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
                   <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Accessories Plans (Watches &amp; Tablets)</span>
                 </div>
@@ -1563,7 +1598,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               <hr className="border-gray-300" />
 
               {/* Device Pricing & Trade-In */}
-              <div className="rounded-lg border border-gray-200 overflow-hidden">
+              <div className="rounded-lg border border-gray-200">
                 <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
                   <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Device Pricing &amp; Trade-In</span>
                 </div>
@@ -1574,12 +1609,12 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           </div>
 
           {/* ── INTERNET ── */}
-          <div className="rounded-xl border-2 border-blue-200 overflow-hidden">
+          <div className="rounded-xl border-2 border-blue-200">
             <div className="bg-blue-600 px-4 py-2">
               <span className="text-white font-bold text-sm tracking-wide">INTERNET</span>
             </div>
             <div className="p-3">
-              <div className="rounded-lg border border-gray-200 overflow-hidden divide-y-2 divide-gray-200">
+              <div className="rounded-lg border border-gray-200 divide-y-2 divide-gray-200">
                 {INTERNET_GROUPS.map(group => renderInternetGroup(group))}
               </div>
             </div>
@@ -1591,13 +1626,13 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
             const cableAddSec = sec('Cable Adders'); const cableAddIdx = si('Cable Adders')
             const streamSec = sec('Streaming'); const streamIdx = si('Streaming')
             return (
-              <div className="rounded-xl border-2 border-purple-200 overflow-hidden">
+              <div className="rounded-xl border-2 border-purple-200">
                 <div className="bg-purple-600 px-4 py-2">
                   <span className="text-white font-bold text-sm tracking-wide">TV</span>
                 </div>
                 <div className="p-3 space-y-3">
                   {cableSec && (
-                    <div className="rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="rounded-lg border border-gray-200">
                       <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5 flex items-center gap-2">
                         <button onClick={() => setActiveDetail({ kind: 'section', si: cableIdx })}
                           className="text-xs font-semibold text-purple-600 hover:text-purple-800 uppercase tracking-wide">Cable / TV</button>
@@ -1614,7 +1649,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                     </div>
                   )}
                   {streamSec && (
-                    <div className="rounded-lg border border-gray-200 overflow-hidden">
+                    <div className="rounded-lg border border-gray-200">
                       <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
                         <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Streaming</span>
                       </div>
@@ -1626,7 +1661,9 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               </div>
             )
           })()}
-        </>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Company DB Modal */}
