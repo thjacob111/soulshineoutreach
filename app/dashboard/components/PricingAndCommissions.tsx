@@ -535,6 +535,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   const [newCompany, setNewCompany] = useState<CompanyDiscount>({ company: '', discount: '' })
   const [agentDiscounts, setAgentDiscounts] = useState<DiscountRow[]>([])
   const [checkedBenefits, setCheckedBenefits] = useState<Set<string>>(new Set())
+  const [checkedInternetRows, setCheckedInternetRows] = useState<Set<string>>(new Set())
   const [planDetails, setPlanDetails] = useState<PlanDetailsMap>({})
   const [detailsExpanded, setDetailsExpanded] = useState(false)
   const [expandedDiscount, setExpandedDiscount] = useState<number | null>(null)
@@ -1078,6 +1079,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               <table className="text-xs w-full border-collapse">
                 <thead>
                   <tr className="bg-white">
+                    <th rowSpan={showPricing ? 2 : 1} className="border border-gray-200 w-5 px-1"></th>
                     <th rowSpan={showPricing ? 2 : 1} className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-32">Rider</th>
                     {showPricing && <th rowSpan={2} className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-14">Price</th>}
                     {showPricing && <th colSpan={2} className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700">Details</th>}
@@ -1097,6 +1099,11 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <tbody>
                   {ridersSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
+                      <td className="border border-gray-200 px-1 text-center w-5">
+                        <input type="checkbox" checked={checkedInternetRows.has(`${group.riders}-${ri}`)}
+                          onChange={() => setCheckedInternetRows(prev => { const n = new Set(prev); const k = `${group.riders}-${ri}`; n.has(k) ? n.delete(k) : n.add(k); return n })}
+                          className="accent-blue-600 cursor-pointer" />
+                      </td>
                       <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap">
                         {canEdit
                           ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none bg-transparent" value={row.plan} placeholder="Rider…"
@@ -1144,6 +1151,11 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <tbody>
                   {discSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
+                      <td className="border border-gray-200 px-1 text-center w-5">
+                        <input type="checkbox" checked={checkedInternetRows.has(`${group.discounts}-${ri}`)}
+                          onChange={() => setCheckedInternetRows(prev => { const n = new Set(prev); const k = `${group.discounts}-${ri}`; n.has(k) ? n.delete(k) : n.add(k); return n })}
+                          className="accent-blue-600 cursor-pointer" />
+                      </td>
                       <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap w-32">{row.plan}</td>
                       <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-14">
                         {canEdit
@@ -1167,6 +1179,11 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <tbody>
                   {promoSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
+                      <td className="border border-gray-200 px-1 text-center w-5">
+                        <input type="checkbox" checked={checkedInternetRows.has(`${group.promotions}-${ri}`)}
+                          onChange={() => setCheckedInternetRows(prev => { const n = new Set(prev); const k = `${group.promotions}-${ri}`; n.has(k) ? n.delete(k) : n.add(k); return n })}
+                          className="accent-blue-600 cursor-pointer" />
+                      </td>
                       <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap w-32">
                         {canEdit
                           ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none bg-transparent" value={row.plan} placeholder="Promotion…"
