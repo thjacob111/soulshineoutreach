@@ -25,15 +25,17 @@ const INTERNET_GROUPS = [
 type PricingGrid = { [plan: string]: { [line: number]: string } }
 type DiscountRow = { label: string; value: string; notes?: string }
 type CompanyDiscount = { company: string; discount: string }
-type RetailBenefit = { agent: string; benefit: string; discount: string; duration: string }
+type RetailBenefit = { benefit: string; discount: string; duration: string }
 
 const RETAIL_AGENT_BENEFITS: RetailBenefit[] = [
-  { agent: 'Best Buy', benefit: 'Line Credit',           discount: '$150 (−$4.17/mo)',  duration: '36 months'              },
-  { agent: 'Best Buy', benefit: 'Waived Activation Fee', discount: '−$35',              duration: '1st bill'               },
-  { agent: 'Best Buy', benefit: 'Apple Care',            discount: 'Free',              duration: '12 months'              },
-  { agent: 'Costco',   benefit: 'Line Credit',           discount: '$250 (−$6.94/mo)',  duration: '36 months'              },
-  { agent: 'Costco',   benefit: 'Waived Activation Fee', discount: '−$35',              duration: '1st bill'               },
-  { agent: 'Costco',   benefit: 'Gift Card',             discount: '$100',              duration: 'Upfront (upgrades too)' },
+  { benefit: 'Line Credit (Best Buy)',  discount: '$150 (−$4.17/mo)',  duration: '36 months'              },
+  { benefit: 'Apple Care (Best Buy)',   discount: 'Free',              duration: '12 months'              },
+  { benefit: 'Line Credit (Costco)',    discount: '$250 (−$6.94/mo)',  duration: '36 months'              },
+  { benefit: 'Gift Card (Costco)',      discount: '$100',              duration: 'Upfront (upgrades too)' },
+  { benefit: 'Waived Activation Fee',  discount: '−$35',              duration: '1st bill'               },
+  { benefit: 'Pay Off Phone',          discount: '',                   duration: ''                       },
+  { benefit: 'Trade In',               discount: '',                   duration: ''                       },
+  { benefit: 'BYOD',                   discount: '',                   duration: ''                       },
 ]
 
 const DEFAULT_DISCOUNTS: DiscountRow[] = [
@@ -154,6 +156,12 @@ const ADDER_INLINE_FIELDS: { key: keyof AdderDetails; label: string }[] = [
   { key: 'eligibility', label: 'Eligibility' },
 ]
 
+// ── RIDER DETAIL TYPES ────────────────────────────────────
+interface RiderDetails {
+  value: string; description: string
+}
+const EMPTY_RIDER_DETAILS: RiderDetails = { value: '', description: '' }
+
 // ── COMMISSION TYPES ──────────────────────────────────────
 interface CommissionRow {
   plan: string
@@ -163,6 +171,7 @@ interface CommissionRow {
   internetDetails?: Partial<InternetPlanDetails>
   cableDetails?: Partial<CablePlanDetails>
   adderDetails?: Partial<AdderDetails>
+  riderDetails?: Partial<RiderDetails>
 }
 interface CommissionSection {
   name: string
@@ -712,6 +721,16 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
       }),
     }))
   }
+  function updateRiderDetail(sIdx: number, ri: number, field: keyof RiderDetails, value: string) {
+    setCommissionConfig(prev => ({
+      ...prev,
+      sections: prev.sections.map((s, idx) => idx !== sIdx ? s : {
+        ...s, rows: s.rows.map((r, ridx) => ridx !== ri ? r : {
+          ...r, riderDetails: { ...EMPTY_RIDER_DETAILS, ...r.riderDetails, [field]: value },
+        }),
+      }),
+    }))
+  }
   function updateSectionDetails(sIdx: number, value: string) {
     setCommissionConfig(prev => ({
       ...prev,
@@ -1059,12 +1078,21 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               <table className="text-xs w-full border-collapse">
                 <thead>
                   <tr className="bg-white">
-                    <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-32">Rider</th>
-                    {singlePriceHeader()}
-                    {hasSep && <th className="bg-gray-300 w-0.5 p-0 border-0" />}
-                    {showCommissions && commHeaderCols()}
-                    {canEdit && <th className="border border-gray-200 w-6" />}
+                    <th rowSpan={showPricing ? 2 : 1} className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-32">Rider</th>
+                    {showPricing && <th rowSpan={2} className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-14">Price</th>}
+                    {showPricing && <th colSpan={2} className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700">Details</th>}
+                    {hasSep && <th rowSpan={showPricing ? 2 : 1} className="bg-gray-300 w-0.5 p-0 border-0" />}
+                    {showCommissions && commissionConfig.roles.map(role => (
+                      <th rowSpan={showPricing ? 2 : 1} key={role} className={`border border-gray-200 px-1 py-1.5 font-semibold text-center whitespace-nowrap w-14 ${role === selectedRole ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'}`}>{role}</th>
+                    ))}
+                    {canEdit && <th rowSpan={showPricing ? 2 : 1} className="border border-gray-200 w-6" />}
                   </tr>
+                  {showPricing && (
+                    <tr className="bg-blue-50/30">
+                      <th className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center w-20">Value</th>
+                      <th className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center w-32">Description</th>
+                    </tr>
+                  )}
                 </thead>
                 <tbody>
                   {ridersSec.rows.map((row, ri) => (
@@ -1076,6 +1104,24 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                           : row.plan}
                       </td>
                       {singlePriceCell(ridersIdx, ri, row)}
+                      {showPricing && (
+                        <td className="border border-gray-200 p-0 text-center bg-blue-50/30 w-20">
+                          {canEdit
+                            ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                                value={row.riderDetails?.value ?? ''} placeholder="—"
+                                onChange={e => updateRiderDetail(ridersIdx, ri, 'value', e.target.value)} />
+                            : <span className="block px-1 py-0.5 text-blue-800">{row.riderDetails?.value || '—'}</span>}
+                        </td>
+                      )}
+                      {showPricing && (
+                        <td className="border border-gray-200 p-0 bg-blue-50/30 w-32">
+                          {canEdit
+                            ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                                value={row.riderDetails?.description ?? ''} placeholder="—"
+                                onChange={e => updateRiderDetail(ridersIdx, ri, 'description', e.target.value)} />
+                            : <span className="block px-1 py-0.5 text-blue-800">{row.riderDetails?.description || '—'}</span>}
+                        </td>
+                      )}
                       {hasSep && <td className="bg-gray-200 w-0.5 p-0 border-0" />}
                       {showCommissions && commCols(ridersIdx, ri, row)}
                       {canEdit && <td className="border border-gray-200 px-1 text-center">
@@ -1151,7 +1197,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   const phoneSec = sec('Phone Plans'); const phoneIdx = si('Phone Plans')
   const adderSec = sec('Phone Plan Adders'); const adderIdx = si('Phone Plan Adders')
   const accSec = sec('Accessories'); const accIdx = si('Accessories')
-  const rsPhone = detailsExpanded ? 2 : 1
+  const rsPhone = 2
 
   // ── MAIN RENDER ───────────────────────────────────────────
   return (
@@ -1250,16 +1296,18 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                           ))}
                           {sepTh() && <th rowSpan={rsPhone} className="bg-gray-300 w-0.5 p-0 border-0" />}
                           {showCommissions && commissionConfig.roles.map(role => (
-                            <th rowSpan={rsPhone} key={role} className={`border border-gray-200 px-1 py-1.5 font-semibold text-center whitespace-nowrap w-14 ${role === selectedRole ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'}`}>{role}</th>
+                            <th colSpan={2} key={role} className={`border border-gray-200 px-1 py-1.5 font-semibold text-center whitespace-nowrap ${role === selectedRole ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700'}`}>{role}</th>
                           ))}
                         </tr>
-                        {showPricing && detailsExpanded && (
-                          <tr className="bg-blue-50/30">
-                            {PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
-                              <th key={f.key} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center whitespace-nowrap max-w-[60px]">{f.label}</th>
-                            ))}
-                          </tr>
-                        )}
+                        <tr className="bg-blue-50/30">
+                          {showPricing && detailsExpanded && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
+                            <th key={f.key} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center whitespace-nowrap max-w-[60px]">{f.label}</th>
+                          ))}
+                          {showCommissions && commissionConfig.roles.flatMap(role => [
+                            <th key={`${role}_new`} className={`border border-gray-200 px-1 py-0.5 text-[9px] font-semibold text-center whitespace-nowrap w-14 ${role === selectedRole ? 'bg-green-500 text-white' : 'bg-green-50/60 text-green-600'}`}>New device</th>,
+                            <th key={`${role}_byod`} className={`border border-gray-200 px-1 py-0.5 text-[9px] font-semibold text-center whitespace-nowrap w-14 ${role === selectedRole ? 'bg-green-500 text-white' : 'bg-green-50/60 text-green-600'}`}>BYOD</th>,
+                          ])}
+                        </tr>
                       </thead>
                       <tbody>
                         {PLAN_NAMES.map(plan => {
@@ -1286,14 +1334,20 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                                 </td>
                               ))}
                               {sep()}
-                              {showCommissions && commissionConfig.roles.map(role => (
-                                <td key={role} className={`border border-gray-200 p-0 text-center ${role === selectedRole ? 'bg-green-50' : 'bg-green-50/30'}`}>
+                              {showCommissions && commissionConfig.roles.flatMap(role => [
+                                <td key={`${role}_new`} className={`border border-gray-200 p-0 text-center ${role === selectedRole ? 'bg-green-50' : 'bg-green-50/30'}`}>
                                   {canEdit
                                     ? <input className={`w-full text-xs text-center px-1 py-0.5 focus:outline-none bg-transparent ${role === selectedRole ? 'focus:bg-green-100' : 'focus:bg-green-50'}`}
-                                        value={commRow?.commissions[role] ?? ''} placeholder="—" onChange={e => setPhoneCommCell(plan, role, e.target.value)} />
-                                    : <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>{commRow?.commissions[role] || '—'}</span>}
-                                </td>
-                              ))}
+                                        value={commRow?.commissions[`${role}_new`] ?? ''} placeholder="—" onChange={e => setPhoneCommCell(plan, `${role}_new`, e.target.value)} />
+                                    : <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>{commRow?.commissions[`${role}_new`] || '—'}</span>}
+                                </td>,
+                                <td key={`${role}_byod`} className={`border border-gray-200 p-0 text-center ${role === selectedRole ? 'bg-green-50' : 'bg-green-50/30'}`}>
+                                  {canEdit
+                                    ? <input className={`w-full text-xs text-center px-1 py-0.5 focus:outline-none bg-transparent ${role === selectedRole ? 'focus:bg-green-100' : 'focus:bg-green-50'}`}
+                                        value={commRow?.commissions[`${role}_byod`] ?? ''} placeholder="—" onChange={e => setPhoneCommCell(plan, `${role}_byod`, e.target.value)} />
+                                    : <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>{commRow?.commissions[`${role}_byod`] || '—'}</span>}
+                                </td>,
+                              ])}
                             </tr>
                           )
                         })}
@@ -1395,29 +1449,25 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                       <thead>
                         <tr className="bg-blue-50">
                           <th className="border border-blue-200 w-6 px-1"></th>
-                          <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Agent</th>
                           <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Benefit</th>
                           <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Discount</th>
                           <th className="border border-blue-200 px-2 py-1.5 text-left font-semibold text-blue-700">Duration</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {['Best Buy', 'Costco'].map(ag =>
-                          RETAIL_AGENT_BENEFITS.filter(b => b.agent === ag).map((b, i, arr) => {
-                            const key = `${b.agent}|${b.benefit}`
-                            const checked = checkedBenefits.has(key)
-                            return (
-                              <tr key={key} className={`cursor-pointer ${checked ? 'bg-blue-100' : 'hover:bg-blue-50/50'}`}
-                                onClick={() => setCheckedBenefits(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })}>
-                                <td className="border border-blue-200 px-1 text-center"><input type="checkbox" readOnly checked={checked} className="accent-blue-600 cursor-pointer" /></td>
-                                {i === 0 ? <td rowSpan={arr.length} className="border border-blue-200 px-2 py-1 font-semibold text-gray-700 align-middle">{ag}</td> : null}
-                                <td className="border border-blue-200 px-2 py-1 text-gray-700">{b.benefit}</td>
-                                <td className="border border-blue-200 px-2 py-1 text-blue-700 font-medium">{b.discount}</td>
-                                <td className="border border-blue-200 px-2 py-1 text-gray-500">{b.duration}</td>
-                              </tr>
-                            )
-                          })
-                        )}
+                        {RETAIL_AGENT_BENEFITS.map(b => {
+                          const key = b.benefit
+                          const checked = checkedBenefits.has(key)
+                          return (
+                            <tr key={key} className={`cursor-pointer ${checked ? 'bg-blue-100' : 'hover:bg-blue-50/50'}`}
+                              onClick={() => setCheckedBenefits(prev => { const n = new Set(prev); n.has(key) ? n.delete(key) : n.add(key); return n })}>
+                              <td className="border border-blue-200 px-1 text-center"><input type="checkbox" readOnly checked={checked} className="accent-blue-600 cursor-pointer" /></td>
+                              <td className="border border-blue-200 px-2 py-1 text-gray-700">{b.benefit}</td>
+                              <td className="border border-blue-200 px-2 py-1 text-blue-700 font-medium">{b.discount || '—'}</td>
+                              <td className="border border-blue-200 px-2 py-1 text-gray-500">{b.duration || '—'}</td>
+                            </tr>
+                          )
+                        })}
                       </tbody>
                     </table>
                   </div>
