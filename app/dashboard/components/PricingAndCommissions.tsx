@@ -538,6 +538,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   const [checkedInternetRows, setCheckedInternetRows] = useState<Set<string>>(new Set())
   const [planDetails, setPlanDetails] = useState<PlanDetailsMap>({})
   const [detailsExpanded, setDetailsExpanded] = useState(false)
+  const [showDetails, setShowDetails] = useState(false)
   const [expandedDiscount, setExpandedDiscount] = useState<number | null>(null)
   const [commissionConfig, setCommissionConfig] = useState<CommissionConfig>(DEFAULT_COMMISSION)
   const [expandedSectionDetails, setExpandedSectionDetails] = useState<Set<string>>(new Set())
@@ -799,9 +800,9 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     if (!showPricing) return null
     return (
       <>
-        <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-14">Standard</th>
-        <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-14">Bundled</th>
-        <th className="border border-gray-200 px-1 py-1 font-semibold text-center bg-blue-50 text-blue-700 w-20 text-[10px]">Promo</th>
+        <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-[72px]">Standard</th>
+        <th className="border border-gray-200 px-1 py-1.5 font-semibold text-center bg-blue-50 text-blue-700 w-[72px]">Bundled</th>
+        <th className="border border-gray-200 px-1 py-1 font-semibold text-center bg-blue-50 text-blue-700 w-[76px] text-[10px]">Promo</th>
       </>
     )
   }
@@ -813,14 +814,14 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     return (
       <>
         {(['standard', 'bundled'] as const).map(f => (
-          <td key={f} className="border border-gray-200 p-0 text-center bg-blue-50/40 w-14">
+          <td key={f} className="border border-gray-200 p-0 text-center bg-blue-50/40 w-[72px]">
             {canEdit
               ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
                   value={(row[f] as string) ?? ''} placeholder="—" onChange={e => setRowField(sIdx, ri, f, e.target.value)} />
               : <span className="block px-1 py-0.5 text-blue-800">{(row[f] as string) || '—'}</span>}
           </td>
         ))}
-        <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-20">
+        <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-[76px]">
           {canEdit
             ? <div className="flex flex-col gap-px py-0.5 px-1">
                 <input className="w-full text-xs text-center focus:outline-none focus:bg-blue-100 bg-transparent"
@@ -877,7 +878,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     nameEditable?: boolean; isCable?: boolean; showDetails?: boolean
     skipPricing?: boolean; isAdder?: boolean; singlePrice?: boolean
   } = {}) {
-    const detailExp = expandedSectionDetails.has(section.name)
+    const detailExp = expandedSectionDetails.has(section.name) || showDetails
     const showPrice = !opts.skipPricing && showPricing
     const showSep = showCommissions && (showPrice || (opts.skipPricing ? false : showPricing))
 
@@ -889,14 +890,14 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-32">Plan</th>
               {showPrice && (opts.singlePrice ? singlePriceHeader() : priceHeaders())}
               {showPricing && opts.showDetails && (
-                <th className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
+                <th className="border border-gray-200 px-1 py-1.5 font-semibold text-purple-700 text-center w-14 bg-purple-50 cursor-pointer hover:bg-purple-100 select-none"
                   onClick={() => toggleExp(section.name)}>Details {detailExp ? '▼' : '▶'}</th>
               )}
               {showPricing && opts.showDetails && detailExp && opts.isCable && (
-                <th className="border border-gray-200 px-1 py-1 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 min-w-[80px]">Channels</th>
+                <th className="border border-gray-200 px-1 py-1 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50 min-w-[80px]">Channels</th>
               )}
               {showPricing && opts.showDetails && detailExp && opts.isAdder && ADDER_INLINE_FIELDS.map(f => (
-                <th key={f.key} className="border border-gray-200 px-1 py-1 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 w-20">{f.label}</th>
+                <th key={f.key} className="border border-gray-200 px-1 py-1 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50 w-20">{f.label}</th>
               ))}
               {showSep ? <th className="bg-gray-300 w-0.5 p-0 border-0" /> : null}
               {showCommissions && commHeaderCols()}
@@ -922,23 +923,23 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                     : row.plan}
                 </td>
                 {showPrice && (opts.singlePrice ? singlePriceCell(sIdx, ri, row) : priceCells(sIdx, ri, row))}
-                {showPricing && opts.showDetails && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20 w-14">—</td>}
+                {showPricing && opts.showDetails && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-purple-50/20 w-14">—</td>}
                 {showPrice && opts.showDetails && detailExp && opts.isCable && (
-                  <td className="border border-gray-200 p-0 text-center bg-blue-50/30 min-w-[80px]">
+                  <td className="border border-gray-200 p-0 text-center bg-purple-50/30 min-w-[80px]">
                     {canEdit
-                      ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                      ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-purple-100 bg-transparent"
                           value={row.cableDetails?.channels_included ?? ''} placeholder="e.g. 150+"
                           onChange={e => updateCablePlanDetail(sIdx, ri, e.target.value)} />
-                      : <span className="block px-1 py-0.5 text-blue-800 truncate">{row.cableDetails?.channels_included || '—'}</span>}
+                      : <span className="block px-1 py-0.5 text-purple-800 truncate">{row.cableDetails?.channels_included || '—'}</span>}
                   </td>
                 )}
                 {showPricing && opts.showDetails && detailExp && opts.isAdder && ADDER_INLINE_FIELDS.map(f => (
-                  <td key={f.key} className="border border-gray-200 p-0 text-center bg-blue-50/30 w-20">
+                  <td key={f.key} className="border border-gray-200 p-0 text-center bg-purple-50/30 w-20">
                     {canEdit
-                      ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                      ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-purple-100 bg-transparent"
                           value={row.adderDetails?.[f.key] ?? ''} placeholder="—"
                           onChange={e => updateAdderPlanDetail(sIdx, ri, f.key, e.target.value)} />
-                      : <span className="block px-1 py-0.5 text-blue-800">{row.adderDetails?.[f.key] || '—'}</span>}
+                      : <span className="block px-1 py-0.5 text-purple-800">{row.adderDetails?.[f.key] || '—'}</span>}
                   </td>
                 ))}
                 {showSep ? <td className="bg-gray-200 w-0.5 p-0 border-0" /> : null}
@@ -961,7 +962,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
     const discSec = sec(group.discounts); const discIdx = si(group.discounts)
     const promoSec = sec(group.promotions); const promoIdx = si(group.promotions)
     if (!planSec) return null
-    const detailExp = expandedSectionDetails.has(group.plan)
+    const detailExp = expandedSectionDetails.has(group.plan) || showDetails
     const hasSep = showPricing && showCommissions
 
     return (
@@ -977,14 +978,14 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <th rowSpan={!showPricing ? 1 : detailExp ? 5 : 2} className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-32">Plan</th>
                 {showPricing && <th colSpan={3} className="border border-gray-200 px-1 py-0.5 font-semibold text-center bg-blue-50 text-blue-700 text-[10px] uppercase tracking-wide">Pricing</th>}
                 {showPricing && (
-                  <th rowSpan={detailExp ? 5 : 2} className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
+                  <th rowSpan={detailExp ? 5 : 2} className="border border-gray-200 px-1 py-1.5 font-semibold text-purple-700 text-center w-14 bg-purple-50 cursor-pointer hover:bg-purple-100 select-none"
                     onClick={() => toggleExp(group.plan)}>Details {detailExp ? '▼' : '▶'}</th>
                 )}
                 {showPricing && detailExp && (
                   <>
-                    <th colSpan={10} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 uppercase tracking-wide">Usage</th>
-                    <th colSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 uppercase tracking-wide">Install</th>
-                    <th colSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 uppercase tracking-wide">Equipment</th>
+                    <th colSpan={10} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50 uppercase tracking-wide">Usage</th>
+                    <th colSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50 uppercase tracking-wide">Install</th>
+                    <th colSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50 uppercase tracking-wide">Equipment</th>
                   </>
                 )}
                 {hasSep && <th rowSpan={!showPricing ? 1 : detailExp ? 5 : 2} className="bg-gray-300 w-0.5 p-0 border-0" />}
@@ -995,18 +996,18 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               </tr>
               {showPricing && (
                 <tr className="bg-blue-50/60">
-                  <th rowSpan={detailExp ? 4 : 1} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-700 text-center w-14">Standard</th>
-                  <th rowSpan={detailExp ? 4 : 1} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-700 text-center w-14">Bundled</th>
-                  <th rowSpan={detailExp ? 4 : 1} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-700 text-center w-20">Promo</th>
+                  <th rowSpan={detailExp ? 4 : 1} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-700 text-center w-[72px]">Standard</th>
+                  <th rowSpan={detailExp ? 4 : 1} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-700 text-center w-[72px]">Bundled</th>
+                  <th rowSpan={detailExp ? 4 : 1} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-700 text-center w-[76px]">Promo</th>
                   {detailExp && (
                     <>
-                      <th rowSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 w-12">Terms</th>
-                      <th colSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50">Speed</th>
-                      <th colSpan={5} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50">Data</th>
-                      <th colSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50">Lines Run</th>
-                      <th rowSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 w-12">Cost</th>
-                      <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50">Router</th>
-                      <th rowSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/50 w-14">Backup Power</th>
+                      <th rowSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50 w-12">Terms</th>
+                      <th colSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50">Speed</th>
+                      <th colSpan={5} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50">Data</th>
+                      <th colSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50">Lines Run</th>
+                      <th rowSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50 w-12">Cost</th>
+                      <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50">Router</th>
+                      <th rowSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/50 w-14">Backup Power</th>
                     </>
                   )}
                 </tr>
@@ -1014,32 +1015,32 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               {showPricing && detailExp && (
                 <>
                   <tr>
-                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/40">Down</th>
-                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/40">Up</th>
-                    <th rowSpan={3} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/40 w-12">Data Cap</th>
-                    <th colSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/40">Extra Data Charge</th>
-                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/40">Phase 1</th>
-                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/40">Phase 2</th>
-                    <th rowSpan={3} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/40 w-12">Provided</th>
-                    <th rowSpan={3} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 text-center bg-blue-50/40 w-12">Cost</th>
+                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/40">Down</th>
+                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/40">Up</th>
+                    <th rowSpan={3} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/40 w-12">Data Cap</th>
+                    <th colSpan={4} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/40">Extra Data Charge</th>
+                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/40">Phase 1</th>
+                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/40">Phase 2</th>
+                    <th rowSpan={3} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/40 w-12">Provided</th>
+                    <th rowSpan={3} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 text-center bg-purple-50/40 w-12">Cost</th>
                   </tr>
                   <tr>
-                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/30 w-10">Min</th>
-                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/30 w-10">Max</th>
-                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/30 w-10">Min</th>
-                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/30 w-10">Max</th>
-                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/30">Tier 1</th>
-                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/30">Tier 2</th>
-                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/30 w-10">Type</th>
-                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/30 w-10">Routing</th>
-                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/30 w-10">Type</th>
-                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/30 w-10">Routing</th>
+                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/30 w-10">Min</th>
+                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/30 w-10">Max</th>
+                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/30 w-10">Min</th>
+                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/30 w-10">Max</th>
+                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/30">Tier 1</th>
+                    <th colSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/30">Tier 2</th>
+                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/30 w-10">Type</th>
+                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/30 w-10">Routing</th>
+                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/30 w-10">Type</th>
+                    <th rowSpan={2} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/30 w-10">Routing</th>
                   </tr>
                   <tr>
-                    <th className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/20 w-10">Data</th>
-                    <th className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/20 w-10">Charge</th>
-                    <th className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/20 w-10">Data</th>
-                    <th className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center bg-blue-50/20 w-10">Charge</th>
+                    <th className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/20 w-10">Data</th>
+                    <th className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/20 w-10">Charge</th>
+                    <th className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/20 w-10">Data</th>
+                    <th className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center bg-purple-50/20 w-10">Charge</th>
                   </tr>
                 </>
               )}
@@ -1050,14 +1051,14 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                   <td className="border border-gray-200 px-1 py-0.5 font-medium text-blue-600 hover:text-blue-800 cursor-pointer whitespace-nowrap"
                     onClick={() => setActiveDetail({ kind: 'internet-plan', si: planIdx, ri })}>{row.plan}</td>
                   {priceCells(planIdx, ri, row)}
-                  {showPricing && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20 w-14">—</td>}
+                  {showPricing && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-purple-50/20 w-14">—</td>}
                   {showPricing && detailExp && INTERNET_DETAIL_LEAF_KEYS.map(key => (
-                    <td key={key} className="border border-gray-200 p-0 text-center bg-blue-50/30 w-10">
+                    <td key={key} className="border border-gray-200 p-0 text-center bg-purple-50/30 w-10">
                       {canEdit
-                        ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
+                        ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-purple-100 bg-transparent"
                             value={row.internetDetails?.[key] ?? ''} placeholder="—"
                             onChange={e => updateInternetPlanDetail(planIdx, ri, key, e.target.value)} />
-                        : <span className="block px-1 py-0.5 text-blue-800">{row.internetDetails?.[key] || '—'}</span>}
+                        : <span className="block px-1 py-0.5 text-purple-800">{row.internetDetails?.[key] || '—'}</span>}
                     </td>
                   ))}
                   {sep()}
@@ -1249,6 +1250,10 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
             <input type="checkbox" checked={showCommissions} onChange={e => setShowCommissions(e.target.checked)} className="accent-green-600" />
             <span className="text-xs font-semibold text-green-700">Commissions</span>
           </label>
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <input type="checkbox" checked={showDetails} onChange={e => setShowDetails(e.target.checked)} className="accent-purple-600" />
+            <span className="text-xs font-semibold text-purple-700">Product Knowledge</span>
+          </label>
           {isAdmin && !isEditing && (
             <button onClick={() => setIsEditing(true)}
               className="text-xs font-medium border border-blue-400 text-blue-600 rounded px-3 py-1 hover:bg-blue-50">
@@ -1305,11 +1310,11 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                             <th rowSpan={rsPhone} key={n} className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center whitespace-nowrap w-11 bg-blue-50">L{n}</th>
                           ))}
                           {showPricing && (
-                            <th rowSpan={rsPhone} className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
-                              onClick={() => setDetailsExpanded(x => !x)}>Details {detailsExpanded ? '▼' : '▶'}</th>
+                            <th rowSpan={rsPhone} className="border border-gray-200 px-1 py-1.5 font-semibold text-purple-700 text-center w-14 bg-purple-50 cursor-pointer hover:bg-purple-100 select-none"
+                              onClick={() => setDetailsExpanded(x => !x)}>Details {(detailsExpanded || showDetails) ? '▼' : '▶'}</th>
                           )}
-                          {showPricing && detailsExpanded && PLAN_DETAIL_SECTIONS.map(s => (
-                            <th key={s.label} colSpan={s.fields.length} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-blue-600 uppercase tracking-wide text-center bg-blue-50/50 whitespace-nowrap">{s.label}</th>
+                          {showPricing && (detailsExpanded || showDetails) && PLAN_DETAIL_SECTIONS.map(s => (
+                            <th key={s.label} colSpan={s.fields.length} className="border border-gray-200 px-1 py-0.5 text-[10px] font-semibold text-purple-600 uppercase tracking-wide text-center bg-purple-50/50 whitespace-nowrap">{s.label}</th>
                           ))}
                           {sepTh() && <th rowSpan={rsPhone} className="bg-gray-300 w-0.5 p-0 border-0" />}
                           {showCommissions && commissionConfig.roles.map(role => (
@@ -1317,8 +1322,8 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                           ))}
                         </tr>
                         <tr className="bg-blue-50/30">
-                          {showPricing && detailsExpanded && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
-                            <th key={f.key} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-blue-600 text-center whitespace-nowrap max-w-[60px]">{f.label}</th>
+                          {showPricing && (detailsExpanded || showDetails) && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
+                            <th key={f.key} className="border border-gray-200 px-1 py-0.5 text-[9px] font-medium text-purple-600 text-center whitespace-nowrap max-w-[60px]">{f.label}</th>
                           ))}
                           {showCommissions && commissionConfig.roles.flatMap(role => [
                             <th key={`${role}_new`} className={`border border-gray-200 px-1 py-0.5 text-[9px] font-semibold text-center whitespace-nowrap w-14 ${role === selectedRole ? 'bg-green-500 text-white' : 'bg-green-50/60 text-green-600'}`}>New device</th>,
@@ -1341,13 +1346,13 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                                     : <span className="block px-1 py-0.5 text-blue-800">{grid[plan]?.[n] || '—'}</span>}
                                 </td>
                               ))}
-                              {showPricing && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20">—</td>}
-                              {showPricing && detailsExpanded && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
-                                <td key={f.key} className="border border-gray-200 p-0 text-center bg-blue-50/30">
+                              {showPricing && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-purple-50/20">—</td>}
+                              {showPricing && (detailsExpanded || showDetails) && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
+                                <td key={f.key} className="border border-gray-200 p-0 text-center bg-purple-50/30">
                                   {canEdit
-                                    ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent min-w-[55px]"
+                                    ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-purple-100 bg-transparent min-w-[55px]"
                                         value={planDetails[plan]?.[f.key] ?? ''} placeholder="—" onChange={e => setPlanDetail(plan, f.key, e.target.value)} />
-                                    : <span className="block px-1 py-0.5 text-blue-800 min-w-[55px]">{planDetails[plan]?.[f.key] || '—'}</span>}
+                                    : <span className="block px-1 py-0.5 text-purple-800 min-w-[55px]">{planDetails[plan]?.[f.key] || '—'}</span>}
                                 </td>
                               ))}
                               {sep()}
