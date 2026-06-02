@@ -2,13 +2,18 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { EditModeProvider, useEditMode } from './pricing/EditModeContext'
+import { TradeInCalculator } from './pricing/TradeInCalculator'
+import type { TradeInCalculator as TIData } from '@/lib/pricing/types'
 
 // ── CONSTANTS ─────────────────────────────────────────────
 const ADMIN_EMAIL = 'thjacob111@gmail.com'
 const PLAN_NAMES = ['Value', 'Extra 2.0', 'Premium 2.0', 'Senior']
 const LINE_COUNTS = [1, 2, 3, 4, 5]
 const FIRSTNET_NOTE = 'Includes FirstNet access — a satellite-backed priority network that gives first responders dedicated cell coverage even during emergencies and network congestion.'
-const CARRIERS = ['AT&T', 'Verizon', 'Frontier', 'Spectrum', 'Ezee'] as const
+const CARRIERS = ['AT&T', 'Verizon', 'T-Mobile', 'Spectrum', 'Mint', 'Cox', 'Frontier', 'Ezee'] as const
+const USER_TYPES = ['Personal', 'Business'] as const
+type UserType = typeof USER_TYPES[number]
 
 const INTERNET_GROUPS = [
   { plan: 'Fiber',    riders: 'Fiber Riders',    discounts: 'Fiber Discounts'    },
@@ -43,39 +48,49 @@ const DEFAULT_DISCOUNTS: DiscountRow[] = [
 
 // ── PHONE PLAN DETAILS ────────────────────────────────────
 interface PlanDetails {
-  call_text_cell_tower_priority: string; call_text_calling_limit: string; call_text_texting_limit: string
-  data_limit: string; data_speed: string; hotspot_limit: string; hotspot_speed: string
+  calling_coverage: string; calling_strength: string; calling_call_limit: string
+  text_limit: string
+  data_limit: string; data_lowered_speed: string; data_speed: string
+  hotspot_limit: string; hotspot_speed: string
   intl_calling_limit: string; intl_coverage_map: string; intl_data_roaming_limit: string; intl_data_roaming_speed: string
   ld_places: string; ld_calling_limit: string
 }
 type PlanDetailsMap = { [plan: string]: PlanDetails }
 const EMPTY_PLAN_DETAILS: PlanDetails = {
-  call_text_cell_tower_priority: '', call_text_calling_limit: '', call_text_texting_limit: '',
-  data_limit: '', data_speed: '', hotspot_limit: '', hotspot_speed: '',
+  calling_coverage: '', calling_strength: '', calling_call_limit: '',
+  text_limit: '',
+  data_limit: '', data_lowered_speed: '', data_speed: '',
+  hotspot_limit: '', hotspot_speed: '',
   intl_calling_limit: '', intl_coverage_map: '', intl_data_roaming_limit: '', intl_data_roaming_speed: '',
   ld_places: '', ld_calling_limit: '',
 }
 const PLAN_DETAIL_SECTIONS: { label: string; fields: { key: keyof PlanDetails; label: string }[] }[] = [
-  { label: 'CALL & TEXT', fields: [
-    { key: 'call_text_cell_tower_priority', label: 'Cell Tower Priority' },
-    { key: 'call_text_calling_limit', label: 'Calling Limit' },
-    { key: 'call_text_texting_limit', label: 'Texting Limit' },
+  { label: 'CALLING', fields: [
+    { key: 'calling_coverage', label: 'Coverage' },
+    { key: 'calling_strength', label: 'Strength' },
+    { key: 'calling_call_limit', label: 'Call Limit' },
+  ]},
+  { label: 'TEXT', fields: [
+    { key: 'text_limit', label: 'Text Limit' },
   ]},
   { label: 'DATA', fields: [
-    { key: 'data_limit', label: 'Data Limit' }, { key: 'data_speed', label: 'Data Speed' },
+    { key: 'data_limit', label: 'Data Limit' },
+    { key: 'data_lowered_speed', label: 'Lowered Speed After Limit' },
+    { key: 'data_speed', label: 'Data Speed' },
   ]},
   { label: 'HOTSPOT', fields: [
-    { key: 'hotspot_limit', label: 'Hotspot Limit' }, { key: 'hotspot_speed', label: 'Hotspot Speed' },
+    { key: 'hotspot_limit', label: 'Limit' },
+    { key: 'hotspot_speed', label: 'Speed' },
   ]},
   { label: 'INTERNATIONAL', fields: [
-    { key: 'intl_calling_limit', label: 'International Calling Limit' },
-    { key: 'intl_coverage_map', label: 'International Coverage Map' },
-    { key: 'intl_data_roaming_limit', label: 'International Data Roaming Limit' },
-    { key: 'intl_data_roaming_speed', label: 'International Data Roaming Speed' },
+    { key: 'intl_calling_limit', label: 'Calling Limit' },
+    { key: 'intl_coverage_map', label: 'Coverage Map' },
+    { key: 'intl_data_roaming_limit', label: 'Data Roaming Limit' },
+    { key: 'intl_data_roaming_speed', label: 'Data Roaming Speed' },
   ]},
   { label: 'LONG DISTANCE', fields: [
-    { key: 'ld_places', label: 'Long Distance Calling Place(s)' },
-    { key: 'ld_calling_limit', label: 'Long Distance Calling Limit' },
+    { key: 'ld_places', label: 'Calling Place(s)' },
+    { key: 'ld_calling_limit', label: 'Calling Limit' },
   ]},
 ]
 
@@ -224,6 +239,57 @@ function migrateCommissionConfig(saved: CommissionConfig): CommissionConfig {
       return { ...sv, type: def.type, sectionDetails: sv.sectionDetails ?? def.sectionDetails ?? '' }
     }),
   }
+}
+
+// ── TRADE-IN EMPTY STATE ──────────────────────────────────
+const EMPTY_TRADE_IN: TIData = {
+  currentDevice: { device: '', brand: '', year: '', model: '', storage: '', condition: '' },
+  tradeInStandard: '',
+  tradeInPromo: '',
+  translatorTiers: { lessThan: '', rangeMin: '', rangeMax: '', greaterThan: '', promoLessThan: '', promoRange: '', promoGreaterThan: '' },
+  newDevice: { device: '', brand: '', year: '', model: '', storage: '', condition: '' },
+  cost: '',
+  customerTotal: '',
+  customerMonthly: '',
+  customerMonths: '',
+}
+
+// ── TRADE-IN SECTION COMPONENTS ───────────────────────────
+function TradeInSectionInner({ data, onChange }: { data: TIData; onChange: (d: TIData) => void }) {
+  const { isAdmin, isEditing, startEdit, saveEdit, cancelEdit } = useEditMode()
+  return (
+    <div>
+      {isAdmin && (
+        <div className="flex justify-end gap-2 px-3 pt-2">
+          {!isEditing && (
+            <button onClick={startEdit} className="text-xs border border-blue-300 text-blue-600 rounded px-2 py-0.5 hover:bg-blue-50">Edit</button>
+          )}
+          {isEditing && (
+            <>
+              <button onClick={cancelEdit} className="text-xs border border-gray-300 text-gray-600 rounded px-2 py-0.5 hover:bg-gray-50">Cancel</button>
+              <button onClick={saveEdit} className="text-xs bg-blue-600 text-white rounded px-2 py-0.5 hover:bg-blue-700">Save</button>
+            </>
+          )}
+        </div>
+      )}
+      <div className="p-3">
+        <TradeInCalculator data={data} onChange={onChange} />
+      </div>
+      <div className="px-4 py-4 text-center space-y-1 border-t border-gray-100">
+        <p className="text-xs text-gray-400 italic">Device pricing database — coming soon.</p>
+        <p className="text-[11px] text-gray-300">AT&amp;T trade-in values and current device retail prices will appear here.</p>
+      </div>
+    </div>
+  )
+}
+
+function DevicePricingSection({ isAdmin }: { isAdmin: boolean }) {
+  const [data, setData] = useState<TIData>(EMPTY_TRADE_IN)
+  return (
+    <EditModeProvider isAdmin={isAdmin} onSave={() => {}}>
+      <TradeInSectionInner data={data} onChange={setData} />
+    </EditModeProvider>
+  )
 }
 
 // ── DETAIL VIEW COMPONENTS ────────────────────────────────
@@ -410,6 +476,8 @@ function CarrierDropdown({ selected, onChange }: { selected: Set<string>; onChan
 // ── MAIN COMPONENT ────────────────────────────────────────
 export default function PricingAndCommissions({ onBack }: { onBack: () => void }) {
   const [isAdmin, setIsAdmin] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [userType, setUserType] = useState<UserType>('Personal')
   const [selectedCarriers, setSelectedCarriers] = useState<Set<string>>(new Set(['AT&T']))
   const [selectedRole, setSelectedRole] = useState('')
   const [grid, setGrid] = useState<PricingGrid>({})
@@ -434,6 +502,8 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   const [loading, setLoading] = useState(true)
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isLoadingRef = useRef(true)
+
+  const canEdit = isAdmin && isEditing
 
   useEffect(() => {
     async function load() {
@@ -658,7 +728,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   function commCols(sIdx: number, ri: number, row: CommissionRow) {
     return commissionConfig.roles.map(role => (
       <td key={role} className={`border border-gray-200 p-0 text-center ${role === selectedRole ? 'bg-green-50' : 'bg-green-50/30'}`}>
-        {isAdmin
+        {canEdit
           ? <input className={`w-full text-xs text-center px-1 py-0.5 focus:outline-none bg-transparent ${role === selectedRole ? 'focus:bg-green-100' : 'focus:bg-green-50'}`}
               value={row.commissions[role] ?? ''} placeholder="—" onChange={e => setCommCell(sIdx, ri, role, e.target.value)} />
           : <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>{row.commissions[role] || '—'}</span>}
@@ -686,14 +756,14 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
       <>
         {(['standard', 'bundled'] as const).map(f => (
           <td key={f} className="border border-gray-200 p-0 text-center bg-blue-50/40 w-14">
-            {isAdmin
+            {canEdit
               ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
                   value={(row[f] as string) ?? ''} placeholder="—" onChange={e => setRowField(sIdx, ri, f, e.target.value)} />
               : <span className="block px-1 py-0.5 text-blue-800">{(row[f] as string) || '—'}</span>}
           </td>
         ))}
         <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-20">
-          {isAdmin
+          {canEdit
             ? <div className="flex flex-col gap-px py-0.5 px-1">
                 <input className="w-full text-xs text-center focus:outline-none focus:bg-blue-100 bg-transparent"
                   value={row.promoAmount ?? ''} placeholder="$" onChange={e => setRowField(sIdx, ri, 'promoAmount', e.target.value)} />
@@ -724,7 +794,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
   }
 
   function addRowBtn(sIdx: number, label = '+ Add Plan') {
-    if (!isAdmin) return null
+    if (!canEdit) return null
     return <button onClick={() => addPlanRow(sIdx)} className="w-full text-xs text-blue-500 py-1 hover:bg-blue-50 border-t border-dashed border-blue-100 text-center">{label}</button>
   }
 
@@ -756,7 +826,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               ))}
               {showSep ? <th className="bg-gray-300 w-0.5 p-0 border-0" /> : null}
               {showCommissions && commHeaderCols()}
-              {isAdmin && <th className="border border-gray-200 w-6" />}
+              {canEdit && <th className="border border-gray-200 w-6" />}
             </tr>
           </thead>
           <tbody>
@@ -772,7 +842,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                     : opts.isAdder ? () => setActiveDetail({ kind: 'adder-plan', si: sIdx, ri })
                     : undefined
                   }>
-                  {opts.nameEditable && isAdmin && !opts.isAdder
+                  {opts.nameEditable && canEdit && !opts.isAdder
                     ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none bg-transparent" value={row.plan} placeholder="Plan…"
                         onChange={e => setRowPlanName(sIdx, ri, e.target.value)} />
                     : row.plan}
@@ -781,7 +851,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 {showPricing && opts.showDetails && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20 w-14">—</td>}
                 {showPrice && opts.showDetails && detailExp && opts.isCable && (
                   <td className="border border-gray-200 p-0 text-center bg-blue-50/30 min-w-[80px]">
-                    {isAdmin
+                    {canEdit
                       ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
                           value={row.cableDetails?.channels_included ?? ''} placeholder="e.g. 150+"
                           onChange={e => updateCablePlanDetail(sIdx, ri, e.target.value)} />
@@ -790,7 +860,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 )}
                 {showPricing && opts.showDetails && detailExp && opts.isAdder && ADDER_INLINE_FIELDS.map(f => (
                   <td key={f.key} className="border border-gray-200 p-0 text-center bg-blue-50/30 w-20">
-                    {isAdmin
+                    {canEdit
                       ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
                           value={row.adderDetails?.[f.key] ?? ''} placeholder="—"
                           onChange={e => updateAdderPlanDetail(sIdx, ri, f.key, e.target.value)} />
@@ -799,7 +869,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 ))}
                 {showSep ? <td className="bg-gray-200 w-0.5 p-0 border-0" /> : null}
                 {showCommissions && commCols(sIdx, ri, row)}
-                {isAdmin && <td className="border border-gray-200 px-1 text-center">
+                {canEdit && <td className="border border-gray-200 px-1 text-center">
                   <button onClick={() => removePlanRow(sIdx, ri)} className="text-gray-300 hover:text-red-400">✕</button>
                 </td>}
               </tr>
@@ -839,7 +909,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 ))}
                 {sepTh()}
                 {showCommissions && commHeaderCols()}
-                {isAdmin && <th className="border border-gray-200 w-6" />}
+                {canEdit && <th className="border border-gray-200 w-6" />}
               </tr>
             </thead>
             <tbody>
@@ -851,7 +921,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                   {showPricing && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20 w-14">—</td>}
                   {showPricing && detailExp && INTERNET_INLINE_FIELDS.map(f => (
                     <td key={f.key} className="border border-gray-200 p-0 text-center bg-blue-50/30 w-14">
-                      {isAdmin
+                      {canEdit
                         ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
                             value={row.internetDetails?.[f.key] ?? ''} placeholder="—"
                             onChange={e => updateInternetPlanDetail(planIdx, ri, f.key, e.target.value)} />
@@ -860,7 +930,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                   ))}
                   {sep()}
                   {showCommissions && commCols(planIdx, ri, row)}
-                  {isAdmin && <td className="border border-gray-200 px-1 text-center">
+                  {canEdit && <td className="border border-gray-200 px-1 text-center">
                     <button onClick={() => removePlanRow(planIdx, ri)} className="text-gray-300 hover:text-red-400">✕</button>
                   </td>}
                 </tr>
@@ -879,7 +949,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                   {ridersSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
                       <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap w-20">
-                        {isAdmin
+                        {canEdit
                           ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none bg-transparent" value={row.plan} placeholder="Rider…"
                               onChange={e => setRowPlanName(ridersIdx, ri, e.target.value)} />
                           : row.plan}
@@ -888,7 +958,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                       {showPricing && <td className="border border-gray-200 w-14 bg-blue-50/10" />}
                       {sep()}
                       {showCommissions && commCols(ridersIdx, ri, row)}
-                      {isAdmin && <td className="border border-gray-200 px-1 text-center">
+                      {canEdit && <td className="border border-gray-200 px-1 text-center">
                         <button onClick={() => removePlanRow(ridersIdx, ri)} className="text-gray-300 hover:text-red-400">✕</button>
                       </td>}
                     </tr>
@@ -910,7 +980,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                     <tr key={ri} className="bg-white hover:bg-gray-50">
                       <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap w-20">{row.plan}</td>
                       <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-14">
-                        {isAdmin
+                        {canEdit
                           ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
                               value={row.price ?? ''} placeholder="—" onChange={e => setRowField(discIdx, ri, 'price', e.target.value)} />
                           : <span className="block px-1 py-0.5 text-blue-800">{row.price || '—'}</span>}
@@ -941,6 +1011,12 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
         <button onClick={onBack} className="text-gray-400 hover:text-gray-600 text-lg shrink-0">←</button>
         <h2 className="font-bold text-gray-800 text-base shrink-0">Pricing & Commissions</h2>
         <CarrierDropdown selected={selectedCarriers} onChange={setSelectedCarriers} />
+        <select
+          value={userType}
+          onChange={e => setUserType(e.target.value as UserType)}
+          className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-blue-400">
+          {USER_TYPES.map(u => <option key={u} value={u}>{u}</option>)}
+        </select>
         {showCommissions && (
           <select value={selectedRole} onChange={e => setSelectedRole(e.target.value)}
             className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 bg-white focus:outline-none focus:border-green-400">
@@ -959,6 +1035,24 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
             <input type="checkbox" checked={showCommissions} onChange={e => setShowCommissions(e.target.checked)} className="accent-green-600" />
             <span className="text-xs font-semibold text-green-700">Commissions</span>
           </label>
+          {isAdmin && !isEditing && (
+            <button onClick={() => setIsEditing(true)}
+              className="text-xs font-medium border border-blue-400 text-blue-600 rounded px-3 py-1 hover:bg-blue-50">
+              Edit
+            </button>
+          )}
+          {isAdmin && isEditing && (
+            <>
+              <button onClick={() => setIsEditing(false)}
+                className="text-xs font-medium border border-gray-300 text-gray-500 rounded px-3 py-1 hover:bg-gray-50">
+                Cancel
+              </button>
+              <button onClick={() => { setIsEditing(false); window.dispatchEvent(new Event('soul-shine:save')) }}
+                className="text-xs font-medium bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700">
+                Save
+              </button>
+            </>
+          )}
           <span className="text-xs">
             {saving ? <span className="text-gray-400">Saving…</span>
               : saveError ? <span className="text-red-500">⚠ Error</span>
@@ -1025,7 +1119,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                                 onClick={() => setActiveDetail({ kind: 'phone-plan', plan })}>{plan}</td>
                               {showPricing && LINE_COUNTS.map(n => (
                                 <td key={n} className="border border-gray-200 p-0 text-center bg-blue-50/40">
-                                  {isAdmin
+                                  {canEdit
                                     ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
                                         value={grid[plan]?.[n] ?? ''} placeholder="—" onChange={e => setPricingCell(plan, n, e.target.value)} />
                                     : <span className="block px-1 py-0.5 text-blue-800">{grid[plan]?.[n] || '—'}</span>}
@@ -1034,7 +1128,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                               {showPricing && <td className="border border-gray-200 px-1 py-0.5 text-center text-xs text-gray-300 bg-blue-50/20">—</td>}
                               {showPricing && detailsExpanded && PLAN_DETAIL_SECTIONS.flatMap(s => s.fields).map(f => (
                                 <td key={f.key} className="border border-gray-200 p-0 text-center bg-blue-50/30">
-                                  {isAdmin
+                                  {canEdit
                                     ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent min-w-[55px]"
                                         value={planDetails[plan]?.[f.key] ?? ''} placeholder="—" onChange={e => setPlanDetail(plan, f.key, e.target.value)} />
                                     : <span className="block px-1 py-0.5 text-blue-800 min-w-[55px]">{planDetails[plan]?.[f.key] || '—'}</span>}
@@ -1043,7 +1137,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                               {sep()}
                               {showCommissions && commissionConfig.roles.map(role => (
                                 <td key={role} className={`border border-gray-200 p-0 text-center ${role === selectedRole ? 'bg-green-50' : 'bg-green-50/30'}`}>
-                                  {isAdmin
+                                  {canEdit
                                     ? <input className={`w-full text-xs text-center px-1 py-0.5 focus:outline-none bg-transparent ${role === selectedRole ? 'focus:bg-green-100' : 'focus:bg-green-50'}`}
                                         value={commRow?.commissions[role] ?? ''} placeholder="—" onChange={e => setPhoneCommCell(plan, role, e.target.value)} />
                                     : <span className={`block px-1 py-0.5 ${role === selectedRole ? 'font-semibold text-green-700' : 'text-green-800'}`}>{commRow?.commissions[role] || '—'}</span>}
@@ -1065,7 +1159,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                     <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Phone Plan Adders</span>
                   </div>
                   {genericTable(adderSec, adderIdx, { skipPricing: true, showDetails: true, isAdder: true })}
-                  {isAdmin && addRowBtn(adderIdx, '+ Add Adder')}
+                  {addRowBtn(adderIdx, '+ Add Adder')}
                 </div>
               )}
 
@@ -1103,7 +1197,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                               </div>
                               <span className="text-gray-300 text-[10px]">{isExp ? '▲' : '▼'}</span>
                             </div>
-                            {isExp && isAdmin && <div className="px-3 pb-2 pt-1 border-t border-blue-100">
+                            {isExp && canEdit && <div className="px-3 pb-2 pt-1 border-t border-blue-100">
                               <textarea className="w-full text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none" rows={2}
                                 value={d.notes ?? ''} placeholder="Notes..." onChange={e => setDiscountNotes(idx, e.target.value)} />
                             </div>}
@@ -1114,7 +1208,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                             <div className="flex items-center justify-between px-3 py-2 gap-2 cursor-pointer hover:bg-blue-50/30" onClick={toggle}>
                               <span className="text-xs text-gray-600">{d.label}</span>
                               <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-                                {isAdmin
+                                {canEdit
                                   ? <input className="w-24 text-xs text-right border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400"
                                       value={d.value} placeholder="e.g. 25% off" onChange={e => setDiscount(idx, e.target.value)} />
                                   : d.value
@@ -1125,7 +1219,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                             </div>
                             {isExp && (
                               <div className="px-3 pb-2 pt-1 border-t border-blue-100">
-                                {isAdmin
+                                {canEdit
                                   ? <textarea className="w-full text-xs border border-blue-200 rounded px-2 py-1 focus:outline-none focus:border-blue-400 resize-none" rows={2}
                                       value={d.notes ?? ''} placeholder="Notes..." onChange={e => setDiscountNotes(idx, e.target.value)} />
                                   : d.notes ? <p className="text-xs text-gray-500 italic">{d.notes}</p> : null}
@@ -1206,15 +1300,14 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 )}
               </div>
 
+              <hr className="border-gray-300" />
+
               {/* Device Pricing & Trade-In */}
               <div className="rounded-lg border border-gray-200 overflow-hidden">
                 <div className="bg-gray-50 border-b border-gray-200 px-3 py-1.5">
                   <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Device Pricing &amp; Trade-In</span>
                 </div>
-                <div className="px-4 py-6 text-center space-y-1">
-                  <p className="text-xs text-gray-400 italic">Device pricing and trade-in values — coming soon.</p>
-                  <p className="text-[11px] text-gray-300">AT&amp;T trade-in values and current device retail prices will appear here.</p>
-                </div>
+                <DevicePricingSection isAdmin={isAdmin} />
               </div>
 
             </div>
