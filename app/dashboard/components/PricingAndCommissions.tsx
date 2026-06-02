@@ -99,16 +99,46 @@ interface InternetPlanDetails {
   contract_term: string; install_fee: string; equipment_fee: string
   speed_range: string; data_cap: string; backup_power: string
   network_description: string; equipment_description: string
+  speed_down_min: string; speed_down_max: string
+  speed_up_min: string; speed_up_max: string
+  extra_data_t1_data: string; extra_data_t1_charge: string
+  extra_data_t2_data: string; extra_data_t2_charge: string
+  install_p1_type: string; install_p1_routing: string
+  install_p2_type: string; install_p2_routing: string
+  equipment_cost: string
+  router_provided: string; router_cost: string
 }
 const EMPTY_INTERNET_DETAILS: InternetPlanDetails = {
   contract_term: '', install_fee: '', equipment_fee: '',
   speed_range: '', data_cap: '', backup_power: '',
   network_description: '', equipment_description: '',
+  speed_down_min: '', speed_down_max: '',
+  speed_up_min: '', speed_up_max: '',
+  extra_data_t1_data: '', extra_data_t1_charge: '',
+  extra_data_t2_data: '', extra_data_t2_charge: '',
+  install_p1_type: '', install_p1_routing: '',
+  install_p2_type: '', install_p2_routing: '',
+  equipment_cost: '',
+  router_provided: '', router_cost: '',
 }
 const INTERNET_INLINE_FIELDS: { key: keyof InternetPlanDetails; label: string }[] = [
   { key: 'contract_term', label: 'Contract' }, { key: 'install_fee', label: 'Install Fee' },
   { key: 'equipment_fee', label: 'Equip. Fee' }, { key: 'speed_range', label: 'Speed' },
   { key: 'data_cap', label: 'Data Cap' }, { key: 'backup_power', label: 'Backup' },
+]
+
+const INTERNET_DETAIL_LEAF_KEYS: (keyof InternetPlanDetails)[] = [
+  'contract_term',
+  'speed_down_min', 'speed_down_max',
+  'speed_up_min', 'speed_up_max',
+  'data_cap',
+  'extra_data_t1_data', 'extra_data_t1_charge',
+  'extra_data_t2_data', 'extra_data_t2_charge',
+  'install_p1_type', 'install_p1_routing',
+  'install_p2_type', 'install_p2_routing',
+  'equipment_cost',
+  'router_provided', 'router_cost',
+  'backup_power',
 ]
 
 // ── CABLE PLAN DETAILS ────────────────────────────────────
@@ -836,7 +866,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
         <table className="text-xs w-full border-collapse">
           <thead>
             <tr className="bg-white">
-              <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap">Plan</th>
+              <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-32">Plan</th>
               {showPrice && (opts.singlePrice ? singlePriceHeader() : priceHeaders())}
               {showPricing && opts.showDetails && (
                 <th className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
@@ -924,7 +954,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
           <table className="text-xs w-full border-collapse">
             <thead>
               <tr className="bg-white">
-                <th rowSpan={showPricing ? 2 : 1} className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap">Plan</th>
+                <th rowSpan={showPricing ? 2 : 1} className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-32">Plan</th>
                 {showPricing && <th colSpan={3} className="border border-gray-200 px-1 py-0.5 font-semibold text-center bg-blue-50 text-blue-700 text-[10px] uppercase tracking-wide">Pricing</th>}
                 {showPricing && (
                   <th rowSpan={2} className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center w-14 bg-blue-50 cursor-pointer hover:bg-blue-100 select-none"
@@ -982,7 +1012,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
               <table className="text-xs w-full border-collapse">
                 <thead>
                   <tr className="bg-white">
-                    <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap">Rider</th>
+                    <th className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-32">Rider</th>
                     {singlePriceHeader()}
                     {hasSep && <th className="bg-gray-300 w-0.5 p-0 border-0" />}
                     {showCommissions && commHeaderCols()}
@@ -1021,7 +1051,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <tbody>
                   {discSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
-                      <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap">{row.plan}</td>
+                      <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap w-32">{row.plan}</td>
                       <td className="border border-gray-200 p-0 text-center bg-blue-50/40 w-14">
                         {canEdit
                           ? <input className="w-full text-xs text-center px-1 py-0.5 focus:outline-none focus:bg-blue-100 bg-transparent"
@@ -1044,7 +1074,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                 <tbody>
                   {promoSec.rows.map((row, ri) => (
                     <tr key={ri} className="bg-white hover:bg-gray-50">
-                      <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap">
+                      <td className="border border-gray-200 px-1 py-0.5 text-gray-600 whitespace-nowrap w-32">
                         {canEdit
                           ? <input className="w-full text-xs px-1 py-0.5 focus:outline-none bg-transparent" value={row.plan} placeholder="Promotion…"
                               onChange={e => setRowPlanName(promoIdx, ri, e.target.value)} />
@@ -1160,7 +1190,7 @@ export default function PricingAndCommissions({ onBack }: { onBack: () => void }
                     <table className="text-xs w-full min-w-max border-collapse">
                       <thead>
                         <tr className="bg-white">
-                          <th rowSpan={rsPhone} className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap">Plan</th>
+                          <th rowSpan={rsPhone} className="border border-gray-200 px-1 py-1.5 text-left font-semibold text-gray-500 whitespace-nowrap w-32">Plan</th>
                           {showPricing && LINE_COUNTS.map(n => (
                             <th rowSpan={rsPhone} key={n} className="border border-gray-200 px-1 py-1.5 font-semibold text-blue-700 text-center whitespace-nowrap w-11 bg-blue-50">L{n}</th>
                           ))}
